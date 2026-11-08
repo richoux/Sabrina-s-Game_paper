@@ -1,0 +1,5 @@
+Draft notes
+===========
+Power-law exponent fitted to mean runtimes: 4.032
+Runtime coefficient a: 0.06602
+Linear memory fit: 100.50 kB per unit n + 7412.14 kB

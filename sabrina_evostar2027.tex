@@ -1,0 +1,226 @@
+% Comment with '%' to remove all comments at once
+\def \Commentaires{}
+
+\documentclass[svgnames,table,runningheads]{llncs}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc} 
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage{xspace}
+\usepackage{lmodern} % for textsc
+\usepackage{subcaption}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{microtype}
+\usepackage{colortbl}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, fit, shapes.geometric, math, calc}
+\usepackage[linesnumbered,boxed,ruled,vlined]{algorithm2e}
+\usepackage{pgfplots}
+
+\usepackage{authblk} % for authors affiliation
+\usepackage{enumitem} % for enumeration without indentation
+\usepackage{wrapfig}
+
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks   = true, %Colours links instead of ugly boxes
+  urlcolor     = blue, %Colour for external hyperlinks
+  linkcolor    = blue, %Colour of internal links
+  citecolor   = blue, %Colour of citations
+  breaklinks = true %use \href{url}{\nolinkurl{display URL}} for breakable long URLs
+}
+
+\usepackage{multirow}
+\usepackage{xcolor}
+
+\ifdefined\Commentaires
+\newcommand{\gn}[1]{\noindent{\color{orange}GN: #1}\xspace}
+\newcommand{\fr}[1]{\noindent{\color{red}FR: #1}\xspace}
+\else
+\newcommand{\gn}[1]{}
+\newcommand{\fr}[1]{}
+\fi
+
+\title{Random Edmonds--Karp for Generating Valid Solutions to Sabrina's Game}
+\titlerunning{Random Edmonds--Karp for Sabrina's Game}
+
+% \author{Anonymous Author(s)}
+% \authorrunning{Anonymous Author(s)}
+% \institute{Anonymous institute(s)\\\email{anonymous@example.org}}
+
+\author{Florian Richoux\inst{1}\orcidID{0000-0003-4693-379X} \and
+Daan van den Berg\inst{2}\orcidID{0000-0001-5060-3342}}
+%
+\authorrunning{F. Richoux and D. van den Berg}
+\institute{AIST, Japan\\
+\email{florian.richoux@aist.go.jp}\\
+\and
+Vrije Universiteit Amsterdam, The Netherlands\\
+\email{d.van.den.berg@vu.nl}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Sabrina's Game asks for a domino tiling of a rectangular grid that minimizes a cost associated with adjacent paired cells. Before optimization, evolutionary methods require a mechanism for generating feasible tilings. We study the satisfaction version of the problem and ask whether valid solutions can be sampled uniformly at random in polynomial time. We model a tiling as a perfect matching in the bipartite grid graph and introduce \emph{Random Edmonds--Karp}, a randomized variant of the Edmonds--Karp algorithm in which the adjacency lists explored by each breadth-first search are shuffled. The procedure always returns a valid tiling on the considered even square grids and inherits polynomial worst-case time from Edmonds--Karp. Experiments show that it does not sample uniformly, but produces substantially varied tilings at low computational cost. Over $10^6$ runs for every square size from $4\times4$ to $16\times16$, the mean runtime grows from $17.33\,\mu$s to $4.74$ ms, while measured memory consumption grows from $7904$ to $9120$ kB. These results position Random Edmonds--Karp as a practical initializer for evolutionary search, while leaving exact or approximate uniform sampling as an open direction.
+\keywords{Domino tiling \and Random generation \and Edmonds--Karp \and Perfect matching \and Evolutionary computation}
+\end{abstract}
+
+\section{Introduction}
+Population-based evolutionary algorithms need a sufficiently diverse initial population. For highly constrained combinatorial problems, generating feasible individuals can itself be a major obstacle. Sabrina's Game is a deliberately simple example: a rectangular array of values must be partitioned into horizontal or vertical dominoes, and the optimization version minimizes the sum of the absolute differences between the two values covered by each domino. Its satisfaction version ignores cell values and asks only for a valid domino tiling.
+
+The initial question of this study is whether feasible tilings can be generated both uniformly and in polynomial time. Uniformity is attractive because it avoids an algorithm-dependent bias in the initial population. However, practical evolutionary search may not require perfect uniformity: a fast generator that reliably returns valid and varied solutions can already be useful.
+
+A domino tiling is equivalent to a perfect matching in a grid graph. Since the square grid graph is bipartite, feasibility can be reduced to maximum flow. This observation gives a deterministic polynomial-time decision and construction procedure. Yet a fixed search order tends to return highly structured matchings. We therefore randomize the order in which breadth-first search explores vertices within Edmonds--Karp. The resulting method, called Random Edmonds--Karp (REK), preserves feasibility and polynomial-time termination, although it does not induce the uniform distribution over perfect matchings.
+
+Our contributions are:
+\begin{itemize}
+  \item a flow formulation of the satisfaction version of Sabrina's Game;
+  \item Random Edmonds--Karp, a simple randomized polynomial-time generator of valid tilings;
+  \item an empirical rejection of exact uniformity on the $4\times4$ instance using $10^6$ samples; and
+  \item a scaling study of iterations, runtime, and memory on all even square grids from $4\times4$ to $16\times16$, with $10^6$ runs per size.
+\end{itemize}
+
+\section{Sabrina's Game and Domino Tilings}
+Let $R_{m,n}=\{1,\ldots,m\}\times\{1,\ldots,n\}$ be an $m\times n$ rectangular grid. A domino is an unordered pair of adjacent cells. A feasible solution is a set $D$ of dominoes such that every cell occurs in exactly one domino. Therefore, $mn$ must be even.
+
+For the optimization version, each cell $u$ has a value $a_u$, and the objective is
+\begin{equation}
+  \min_{D} \sum_{\{u,v\}\in D}|a_u-a_v|.
+\end{equation}
+
+\fr{Cite Daan's work}
+
+The present work considers only satisfaction: finding any feasible $D$. This is precisely the classical domino-tiling problem, equivalently a perfect matching of the grid graph~\cite{fusy2016random}.
+
+\fr{Chessboard and bipartite graph figures}
+
+Color the grid as a chessboard and let $B$ and $W$ denote the black and white cells. Every adjacency joins one cell in $B$ to one in $W$, so the grid graph $G=(B\cup W,E)$ is bipartite. Construct a flow network by adding a source $s$, a sink $t$, unit-capacity arcs from $s$ to every vertex in $B$, unit-capacity arcs corresponding to grid adjacencies from $B$ to $W$, and unit-capacity arcs from every vertex in $W$ to $t$. An integral flow of value $mn/2$ is equivalent to a perfect matching and thus to a valid tiling.
+
+\section{Random Edmonds--Karp}
+Edmonds--Karp repeatedly finds a shortest augmenting path in the residual network by breadth-first search (BFS). Its generic worst-case complexity is $O(|V|\cdot |E|^2)$~\cite{edmondskarp1972}. The randomization used here changes only tie-breaking among nodes at the same BFS depth. Consequently, every selected augmenting path remains shortest, and the standard complexity result still applies.
+
+% \begin{algorithm}[t]
+% \caption{Random Edmonds--Karp for domino tiling}\label{alg:rek}
+% \begin{algorithmic}[1]
+% \Require Flow network $N=(V,A)$ constructed from an even grid
+% \Ensure A perfect matching, or failure if none exists
+% \State $f\gets 0$
+% \While{$t$ is reachable from $s$ in the residual network $N_f$}
+%   \ForAll{$u\in V$}
+%     \State randomly shuffle the residual outgoing arcs of $u$
+%   \EndFor
+%   \State $P\gets$ a shortest $s$--$t$ path returned by BFS
+%   \State augment one unit of flow along $P$
+% \EndWhile
+% \If{$|f|=mn/2$}
+%   \State \Return the dominoes induced by the $B$--$W$ arcs carrying flow
+% \Else
+%   \State \Return failure
+% \EndIf
+% \end{algorithmic}
+% \end{algorithm}
+\begin{algorithm}
+  \DontPrintSemicolon
+  $flow \gets \emptyset$\;
+  \While{$\text{a simple path from S to T exists}$}{
+    \ForEach{$edge\ (x,y) \text{ in the path}$}{
+      \If{$(x,y) \text{ is an edge in the original graph}$}{
+        $flow \gets flow \cup (x,y)$\;
+      }
+      \Else{
+        $flow \gets flow \setminus (x,y)$\;
+      }
+      Flip edge $(x,y)$\;
+    }          
+  }
+  \Return $flow$\;
+  \caption{Ford-Fulkerson}\label{alg:rek} 
+\end{algorithm}
+
+\fr{This is not the right algo (FF instead of REK). To do later.}
+
+\subsection{Correctness and complexity}
+
+\begin{proposition}
+Algorithm~\ref{alg:rek} returns a maximal flow of $mn/2$.
+\end{proposition}
+\begin{proof}
+Each iteration of Algorithm~\ref{alg:rek} is adding one edge into the flow, even if some edges are removed. Indeed, removing an edge from the flow means that the path contains a flipped edge from a black node to a white node. However, the path necessarily contains a ``white-to-black'' edge for each ``black-to-white'' edge, to reach the sink \(t\). This implies that each edge removal from the flow is compensated by the addition of another edge in the flow. Thus, for \(k\) ``black-to-white'' edges in the path, the later contains exactly \(k+1\) ``white-to-black'' edges.
+
+All capacities between white and black nodes are equal to 1, so each flow augmentation will increase by 1. Algorithm~\ref{alg:rek} selects a total of $mn/2$ paths (since there are $mn/2$ white nodes, thus $mn/2$ arcs from \(s\) to a white node), which implies $mn/2$ flow augmentations. The algorithm returns a maximal flow of $mn/2$.
+\end{proof}
+
+\fr{Add a Lemma showing that no edges in the flow contain twice the same node. Thus flow of \(mn/2 \Rightarrow\) valid tiling}
+
+\begin{proposition}\label{prop:complexity}
+Random Edmonds--Karp terminates in polynomial time.
+\end{proposition}
+\begin{proof}
+At each iteration, Algorithm~\ref{alg:rek} consumes one edge from \(s\) to a white node, and reciprocaly one edge from a black node to \(t\), so it necessarily terminates after \(mn/2\) iterations, since no paths from \(s\) to \(t\) remain once all ``s-to-white'' and ``black-to-t'' edges have been flipped.
+
+Finding a path is done with Breadth-First Search, which is in \(O(|V|+|E|)\), and shuffling the children of a node is done in constant time, since no nodes has more than 4 children. Therefore the standard Edmonds--Karp bound $O(|V|\cdot |E|^2)$ applies. For an $n\times m$ grid, $|V|=mn+2$ and $|E|=\Theta(mn)$ in the flow network. Therefore, Algorithm~\ref{alg:rek} runs in polynomial-time in the problem instance size.
+\end{proof}
+
+\subsection{Why the distribution is not uniform}
+Random tie-breaking does not assign equal probability to all perfect matchings. A final matching can be reached through many sequences of shortest augmenting paths, and different matchings need not have the same number or probability mass of such histories. On the $4\times4$ grid, which has 36 tilings, the frequencies observed over $10^6$ independent runs reject the uniform null hypothesis under Pearson's chi-squared test at the 5\% significance level. Thus REK should be described as a randomized feasible-solution generator, not as a uniform sampler.
+
+\fr{Figures from my slides}
+
+\fr{About the Pearson test, give the degrees of freedom, $p$-value, etc.}
+
+\section{Experimental Methodology}
+We evaluated square grids of side $n\in\{4,6,8,10,12,14,16\}$. Each configuration was executed $10^6$ times. We recorded the mean runtime in microseconds, and the program memory in kilobytes. All experiments have been done on GNU/Linux CachyOS over a machine with a Core i9 9900 CPU and 32 GB of RAM. The C++ code has been compiled with g++ v16.2.1, with the -O3 optimization flag. The source code, the experimental setup and the result summaries can be found at URL
+%\href{https://anonymous.4open.science/r/...}{anonymous.4open.science/r/...}.
+% \href{https://github.com/richoux/Sabrina-s-Game/tree/...}{github.com/richoux/Sabrina-s-Game/tree/...}.
+
+The number of while-loop interations is deterministic in these experiments: all grids are tileable and every augmentation carries one unit, hence $n^2/2$ iterations are required. Runtime and memory values are aggregate measurements supplied by the implementation.
+
+\section{Results}
+\begin{table}[t]
+\centering
+\caption{Performance over $10^6$ runs per square grid size.}\label{tab:results}
+\begin{tabular}{rrrr}
+\toprule
+Grid & Iterations & Mean runtime ($\mu$s) & Memory (kB)\\
+\midrule
+$4\times4$   & 8   & 17.33   & 7904\\
+$6\times6$   & 18  & 94.38   & 8036\\
+$8\times8$   & 32  & 285.17  & 8168\\
+$10\times10$ & 50  & 710.46  & 8300\\
+$12\times12$ & 72  & 1475.76 & 8564\\
+$14\times14$ & 98  & 2760.32 & 8828\\
+$16\times16$ & 128 & 4736.52 & 9120\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figs/rek_scaling}
+\caption{Number of while-loop iterations, mean runtime, and memory consumption as the square grid side increases.}\label{fig:scaling}
+\end{figure}
+
+The mean runtime remains below 5 ms even for the $16\times16$ grid. A descriptive power-law regression on the seven means gives approximately $T(n)=a n^{p}$ with $p=4.02$. This is not a complexity proof, but it suggests quartic growth over the measured range, substantially below the conservative generic bound given in the proof of Proposition~\ref{prop:complexity}. Runtime increases by a factor of about 273 between $n=4$ and $n=16$, while the number of cells increases by a factor of 16.
+
+Measured memory increases by 1216 kB, or approximately 15.4\%, across the tested range. A linear fit against the grid side gives about 101 kB per additional row/column over this narrow interval. Because the measurement includes a large fixed program baseline, these values do not directly establish an asymptotic space complexity.
+
+\section{Discussion}
+The central result is practical rather than distributional. REK does not solve the initial uniform-sampling question, but it combines three useful properties: it always constructs a feasible tiling, it has a polynomial worst-case guarantee, and randomized BFS tie-breaking yields visibly different solutions. This makes it suitable for initializing evolutionary or other population-based methods without repair or rejection sampling.
+
+The non-uniformity result requires careful interpretation. Rejecting exact uniformity does not show that the distribution is unusably concentrated. % For evolutionary computation, more relevant diagnostics include entropy, effective support size, pairwise Hamming distance between matchings, edge-inclusion marginals, and downstream optimization performance. These should be added in the next experimental revision.
+Exact uniform samplers exist for important special regions, such as domino shuffling for Aztec diamonds, while more general approaches often use Markov chains~\cite{nordenstam2008shuffling,fusy2016random}. Their objectives and computational trade-offs differ from the deliberately simple REK procedure.
+\fr{Not really sure about this -> to check}
+
+Several limitations remain. First, the present scaling study covers only small squares. Second, mean runtime alone does not characterize variability; standard deviation and quantiles should be reported. 
+
+\section{Conclusion}
+We presented Random Edmonds--Karp for generating feasible solutions to the satisfaction version of Sabrina's Game. The method converts domino tiling into unit-capacity maximum flow and randomizes BFS tie-breaking. It is polynomial, returns valid tilings, and runs in milliseconds on square grids up to $16\times16$. It is not an exact uniform sampler, as demonstrated empirically on the $4\times4$ grid. Nevertheless, it offers a lightweight way to obtain varied feasible individuals for evolutionary search. Future work will quantify diversity more directly, compare REK with uniform or approximately uniform samplers, extend the experiments to larger regions, and measure the impact of initialization bias on the optimization version of Sabrina's Game.
+
+\bibliographystyle{splncs04}
+\bibliography{references}
+\end{document}

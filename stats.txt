@@ -1,0 +1,34 @@
+4x4
+Number of iterations: 8
+Mean runtime (in microseconds): 17.33
+Memory usage (in kb): 7904
+
+6x6
+Number of iterations: 18
+Mean runtime (in microseconds): 94.38
+Memory usage (in kb): 8036
+
+8x8
+Number of iterations: 32
+Mean runtime (in microseconds): 285.17
+Memory usage (in kb): 8168
+
+10x10
+Number of iterations: 50
+Mean runtime (in microseconds): 710.46
+Memory usage (in kb): 8300
+
+12x12
+Number of iterations: 72
+Mean runtime (in microseconds): 1475.76
+Memory usage (in kb): 8564
+
+14x14
+Number of iterations: 98
+Mean runtime (in microseconds): 2760.32
+Memory usage (in kb): 8828
+
+16x16
+Number of iterations: 128
+Mean runtime (in microseconds): 4736.52
+Memory usage (in kb): 9120
