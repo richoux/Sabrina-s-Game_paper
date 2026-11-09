@@ -44,6 +44,63 @@
 \newcommand{\fr}[1]{}
 \fi
 
+\renewcommand{\thealgocf}{}
+\pgfplotsset{
+  compat=newest,
+  xlabel near ticks,
+  ylabel near ticks
+}
+% ----- Colors -----
+\definecolor{myblue}{RGB}{31,95,255}
+\definecolor{mygreen}{RGB}{47,214,58}
+\definecolor{myred}{RGB}{255,42,31}
+
+% ----- Styles -----
+\tikzset{
+  box/.style={line width=1.6pt, line join=miter}, % all straight lines
+  num/.style={font=\bfseries\Large}
+}
+
+% Grid size (in unit cells): 10 wide x 5 tall. Every box is 2x1.
+\newcommand{\GW}{10}
+\newcommand{\GH}{5}
+
+\pgfkeys{
+  mybox/.is family,
+  mybox,
+  x/.initial=0,
+  y/.initial=0,
+  height/.initial=\GH,
+  color/.initial=myblue,
+  text/.initial={}, 
+}
+
+\newcommand\myboxset[1]{\pgfkeys{mybox,#1}}
+\newcommand\myvbox[1][]{
+  \myboxset{#1,
+    x/.get=\boxx,
+    y/.get=\boxy,
+    height/.get=\gridheight,
+    color/.get=\boxcolor,
+    text/.get=\boxtext
+  }
+
+  \draw[box,\boxcolor] (\boxx+0.1,\gridheight-\boxy-0.1) rectangle (\boxx+0.9,\gridheight-\boxy-1.9);
+  \node[num,\boxcolor] at (\boxx+0.5,\gridheight-\boxy-1) {\boxtext};
+}
+\newcommand\myhbox[1][]{
+  \myboxset{#1,
+    x/.get=\boxx,
+    y/.get=\boxy,
+    height/.get=\gridheight,
+    color/.get=\boxcolor,
+    text/.get=\boxtext
+  }
+
+  \draw[box,\boxcolor] (\boxx+0.1,\gridheight-\boxy-0.1) rectangle (\boxx+1.9,\gridheight-\boxy-0.9);
+  \node[num,\boxcolor] at (\boxx+1,\gridheight-\boxy-0.5) {\boxtext};
+}
+
 \title{Random Edmonds--Karp for Generating Valid Solutions to Sabrina's Game}
 \titlerunning{Random Edmonds--Karp for Sabrina's Game}
 
@@ -66,7 +123,7 @@ Vrije Universiteit Amsterdam, The Netherlands\\
 \maketitle
 
 \begin{abstract}
-Sabrina's Game asks for a domino tiling of a rectangular grid that minimizes a cost associated with adjacent paired cells. Before optimization, evolutionary methods require a mechanism for generating feasible tilings. We study the satisfaction version of the problem and ask whether valid solutions can be sampled uniformly at random in polynomial time. We model a tiling as a perfect matching in the bipartite grid graph and introduce \emph{Random Edmonds--Karp}, a randomized variant of the Edmonds--Karp algorithm in which the adjacency lists explored by each breadth-first search are shuffled. The procedure always returns a valid tiling on the considered even square grids and inherits polynomial worst-case time from Edmonds--Karp. Experiments show that it does not sample uniformly, but produces substantially varied tilings at low computational cost. Over $10^6$ runs for every square size from $4\times4$ to $16\times16$, the mean runtime grows from $17.33\,\mu$s to $4.74$ ms, while measured memory consumption grows from $7904$ to $9120$ kB. These results position Random Edmonds--Karp as a practical initializer for evolutionary search, while leaving exact or approximate uniform sampling as an open direction.
+Sabrina's Game asks for a domino tiling of a rectangular grid that minimizes a cost associated with adjacent paired cells. Before optimization, evolutionary methods require a mechanism for generating feasible tilings. We study the satisfaction version of the problem and ask whether valid solutions can be sampled uniformly at random in polynomial time. We model a tiling as a perfect matching in the bipartite grid graph and introduce \emph{Random Edmonds--Karp}, a randomized variant of the Edmonds--Karp algorithm in which the adjacency lists explored by each breadth-first search are shuffled. The procedure always returns a valid tiling on the considered even square grids and inherits polynomial worst-case time from Edmonds--Karp. Experiments show that it does not sample uniformly, but produces substantially varied tilings at low computational cost. Over $10^6$ runs for every square size from $4\times4$ to $20\times20$, the mean runtime grows from $17.33\,\mu$s to $11.89\,$ms, while measured memory consumption grows from $7904$ to $9884$ kB. These results position Random Edmonds--Karp as a practical initializer for evolutionary search, while leaving exact or approximate uniform sampling as an open direction.
 \keywords{Domino tiling \and Random generation \and Edmonds--Karp \and Perfect matching \and Evolutionary computation}
 \end{abstract}
 
@@ -82,7 +139,7 @@ Our contributions are:
   \item a flow formulation of the satisfaction version of Sabrina's Game;
   \item Random Edmonds--Karp, a simple randomized polynomial-time generator of valid tilings;
   \item an empirical rejection of exact uniformity on the $4\times4$ instance using $10^6$ samples; and
-  \item a scaling study of iterations, runtime, and memory on all even square grids from $4\times4$ to $16\times16$, with $10^6$ runs per size.
+  \item a scaling study of iterations, runtime, and memory on all even square grids from $4\times4$ to $20\times20$, with $10^6$ runs per size.
 \end{itemize}
 
 \section{Sabrina's Game and Domino Tilings}
@@ -97,7 +154,149 @@ For the optimization version, each cell $u$ has a value $a_u$, and the objective
 
 The present work considers only satisfaction: finding any feasible $D$. This is precisely the classical domino-tiling problem, equivalently a perfect matching of the grid graph~\cite{fusy2016random}.
 
+\begin{figure}
+  \begin{tikzpicture}[scale=1.0]
+    \draw[black,line width=0.4pt,step=1] (0,0) grid (4,4);
+    \draw[black,line width=1.6pt] (0,0) rectangle (4,4);
+    
+    \draw[box,fill=myblue,myblue] (0+0.1,4-0-0.1) rectangle (0+1.9,4-0-0.9);
+    \draw[box,fill=myblue,myblue] (2+0.1,4-0-0.1) rectangle (2+1.9,4-0-0.9);
+
+    \draw[box,fill=myblue,myblue] (0+0.1,4-1-0.1) rectangle (0+0.9,4-1-1.9);
+    \draw[box,fill=myblue,myblue] (1+0.1,4-1-0.1) rectangle (1+1.9,4-1-0.9);
+    \draw[box,fill=myblue,myblue] (3+0.1,4-1-0.1) rectangle (3+0.9,4-1-1.9);
+
+    \draw[box,fill=myblue,myblue] (1+0.1,4-2-0.1) rectangle (1+1.9,4-2-0.9);
+
+    \draw[box,fill=myblue,myblue] (0+0.1,4-3-0.1) rectangle (0+1.9,4-3-0.9);
+    \draw[box,fill=myblue,myblue] (2+0.1,4-3-0.1) rectangle (2+1.9,4-3-0.9);
+  \end{tikzpicture}
+  \begin{tikzpicture}[scale=1.0]
+    \draw[black,line width=0.4pt,step=1] (0,0) grid (4,4);
+    \draw[black,line width=1.6pt] (0,0) rectangle (4,4);
+    
+    \draw[box,fill=myred,,line width=0.6pt] (-1+0.1,4-0-0.1) rectangle (-1+1.9,4-0-0.9);
+    \draw[box,fill=myblue,myblue] (2+0.1,4-0-0.1) rectangle (2+1.9,4-0-0.9);
+
+    \draw[box,fill=myblue,myblue] (0+0.1,4-1-0.1) rectangle (0+0.9,4-1-1.9);
+    \draw[box,fill=myblue,myblue] (1+0.1,4-1-0.1) rectangle (1+1.9,4-1-0.9);
+    \draw[box,fill=myred,line width=0.6pt] (3+0.1,4-2-0.1) rectangle (3+0.9,4-2-1.9);
+
+    \draw[box,fill=myblue,myblue] (1+0.1,4-2-0.1) rectangle (1+1.9,4-2-0.9);
+
+    \draw[box,fill=myblue,myblue] (0+0.1,4-3-0.1) rectangle (0+1.9,4-3-0.9);
+    \draw[box,fill=myred,,line width=0.6pt] (2+0.1,4-3-0.1) rectangle (2+1.9,4-3-0.9);
+
+    \node[num,myred] at (1.5,3.5) {X};
+    \node[num,myred] at (3.5,2.5) {X};
+  \end{tikzpicture}
+  \caption{Left: An expected perfect tiling. Right: An invalid solution, with two cells not covered by any tile, a tile going outside the frame, and two overlapping tiles}\label{fig:tiling}
+\end{figure}
+
 \fr{Chessboard and bipartite graph figures}
+
+\begin{figure}
+  \centering
+  \begin{tikzpicture}[scale=1.0]
+    \draw[lightgray,line width=0.4pt,step=1] (0,0) grid (4,4);
+    \draw[black,line width=1.6pt] (0,0) rectangle (4,4);
+    
+    \draw[fill=black,black] (0,0) rectangle (1,1);
+    \draw[fill=black,black] (2,0) rectangle (3,1);
+    \draw[fill=black,black] (1,1) rectangle (2,2);
+    \draw[fill=black,black] (3,1) rectangle (4,2);
+    \draw[fill=black,black] (0,2) rectangle (1,3);
+    \draw[fill=black,black] (2,2) rectangle (3,3);
+    \draw[fill=black,black] (1,3) rectangle (2,4);
+    \draw[fill=black,black] (3,3) rectangle (4,4);
+  \end{tikzpicture}
+  \begin{tikzpicture}[scale=1.0]
+    \draw[lightgray,line width=0.4pt,step=1] (0,0) grid (4,4);
+    \draw[black,line width=1.6pt] (0,0) rectangle (4,4);
+    
+    \draw[black,line width=1pt] (0.5,0.5) -- (3.5,0.5);
+    \draw[black,line width=1pt] (0.5,1.5) -- (3.5,1.5);
+    \draw[black,line width=1pt] (0.5,2.5) -- (3.5,2.5);
+    \draw[black,line width=1pt] (0.5,3.5) -- (3.5,3.5);
+    \draw[black,line width=1pt] (0.5,0.5) -- (0.5,3.5);
+    \draw[black,line width=1pt] (1.5,0.5) -- (1.5,3.5);
+    \draw[black,line width=1pt] (2.5,0.5) -- (2.5,3.5);
+    \draw[black,line width=1pt] (3.5,0.5) -- (3.5,3.5);
+
+    \draw[black,fill=black] (0.5,0.5) circle (0.25);
+    \draw[black,fill=white] (0.5,1.5) circle (0.25);
+    \draw[black,fill=black] (0.5,2.5) circle (0.25);
+    \draw[black,fill=white] (0.5,3.5) circle (0.25);
+
+    \draw[black,fill=white] (1.5,0.5) circle (0.25);
+    \draw[black,fill=black] (1.5,1.5) circle (0.25);
+    \draw[black,fill=white] (1.5,2.5) circle (0.25);
+    \draw[black,fill=black] (1.5,3.5) circle (0.25);
+
+    \draw[black,fill=black] (2.5,0.5) circle (0.25);
+    \draw[black,fill=white] (2.5,1.5) circle (0.25);
+    \draw[black,fill=black] (2.5,2.5) circle (0.25);
+    \draw[black,fill=white] (2.5,3.5) circle (0.25);
+
+    \draw[black,fill=white] (3.5,0.5) circle (0.25);
+    \draw[black,fill=black] (3.5,1.5) circle (0.25);
+    \draw[black,fill=white] (3.5,2.5) circle (0.25);
+    \draw[black,fill=black] (3.5,3.5) circle (0.25);
+  \end{tikzpicture}
+  \begin{tikzpicture}[scale=1.0]
+    \draw[black,line width=1pt] (0,0) -- (0,2);
+    \draw[black,line width=1pt] (0,0) -- (1,2);
+    \draw[black,line width=1pt] (0,0) -- (2,2);
+
+    \draw[black,line width=1pt] (1,0) -- (1,2);
+    \draw[black,line width=1pt] (1,0) -- (3,2);
+
+    \draw[black,line width=1pt] (2,0) -- (0,2);
+    \draw[black,line width=1pt] (2,0) -- (2,2);
+    \draw[black,line width=1pt] (2,0) -- (4,2);
+
+    \draw[black,line width=1pt] (3,0) -- (1,2);
+    \draw[black,line width=1pt] (3,0) -- (2,2);
+    \draw[black,line width=1pt] (3,0) -- (3,2);
+    \draw[black,line width=1pt] (3,0) -- (5,2);
+
+    \draw[black,line width=1pt] (4,0) -- (2,2);
+    \draw[black,line width=1pt] (4,0) -- (4,2);
+    \draw[black,line width=1pt] (4,0) -- (5,2);
+    \draw[black,line width=1pt] (4,0) -- (6,2);
+
+    \draw[black,line width=1pt] (5,0) -- (3,2);
+    \draw[black,line width=1pt] (5,0) -- (5,2);
+    \draw[black,line width=1pt] (5,0) -- (7,2);
+
+    \draw[black,line width=1pt] (6,0) -- (4,2);
+    \draw[black,line width=1pt] (6,0) -- (6,2);
+
+    \draw[black,line width=1pt] (7,0) -- (5,2);
+    \draw[black,line width=1pt] (7,0) -- (6,2);
+    \draw[black,line width=1pt] (7,0) -- (7,2);
+
+    \draw[black,fill=white] (0,2) circle (0.25);
+    \draw[black,fill=white] (1,2) circle (0.25);
+    \draw[black,fill=white] (2,2) circle (0.25);
+    \draw[black,fill=white] (3,2) circle (0.25);
+    \draw[black,fill=white] (4,2) circle (0.25);
+    \draw[black,fill=white] (5,2) circle (0.25);
+    \draw[black,fill=white] (6,2) circle (0.25);
+    \draw[black,fill=white] (7,2) circle (0.25);
+
+    \draw[black,fill=black] (0,0) circle (0.25);
+    \draw[black,fill=black] (1,0) circle (0.25);
+    \draw[black,fill=black] (2,0) circle (0.25);
+    \draw[black,fill=black] (3,0) circle (0.25);
+    \draw[black,fill=black] (4,0) circle (0.25);
+    \draw[black,fill=black] (5,0) circle (0.25);
+    \draw[black,fill=black] (6,0) circle (0.25);
+    \draw[black,fill=black] (7,0) circle (0.25);  
+  \end{tikzpicture}
+  \caption{Grid as a Chessboard}\label{fig:chessboard}
+\end{figure}
+
 
 Color the grid as a chessboard and let $B$ and $W$ denote the black and white cells. Every adjacency joins one cell in $B$ to one in $W$, so the grid graph $G=(B\cup W,E)$ is bipartite. Construct a flow network by adding a source $s$, a sink $t$, unit-capacity arcs from $s$ to every vertex in $B$, unit-capacity arcs corresponding to grid adjacencies from $B$ to $W$, and unit-capacity arcs from every vertex in $W$ to $t$. An integral flow of value $mn/2$ is equivalent to a perfect matching and thus to a valid tiling.
 
@@ -171,10 +370,73 @@ Random tie-breaking does not assign equal probability to all perfect matchings. 
 
 \fr{Figures from my slides}
 
+\begin{figure}
+  \begin{tikzpicture}[scale=0.75]
+    \begin{axis}[
+      width=16cm, height=9cm,
+      ybar,                          % one bar per data point
+      bar width=8pt,
+      xlabel={Solution},
+      ylabel={Frequency},
+      xmin=0.5, xmax=36.5,
+      ymin=0,   ymax=61000,
+      xtick={1,2,...,36},
+      xticklabel style={font=\footnotesize},
+      yticklabel style={/pgf/number format/1000 sep={\,}},
+      ymajorgrids=true,
+      grid style={gray!30},
+      tick align=outside,
+      enlarge x limits=0.02,
+      fill=blue!60, draw=black,
+      ]
+      % x = value (1..36), y = frequency
+      \addplot+[ybar] coordinates {
+        (1,19267)  (2,20955)  (3,25702)  (4,20188) (5,21353)  (6,33822)
+        (7,32129)  (8,20204)  (9,21027)  (10,29825) (11,21873) (12,20954)
+        (13,59965) (14,25656) (15,31980) (16,31251) (17,30031) (18,34359)
+        (19,34039) (20,30023) (21,20886) (22,21868) (23,31966) (24,20979)
+        (25,20428) (26,31167) (27,31779)  (28,25745) (29,59932) (30,30067)
+        (31,25474) (32,20899) (33,20218) (34,33744) (35,20896)  (36,19349)
+      };
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Solution distribution over 1,000,000 runs on a \(4times4\) grid}\label{fig:notuniform}
+\end{figure}
+
+\begin{figure}
+  \begin{tikzpicture}[scale=1]
+    \draw[lightgray,line width=0.4pt,step=1] (0,0) grid (4,4);
+    \draw[black,line width=1.6pt] (0,0) rectangle (4,4);
+    
+    \myvbox[x=0,y=0,height=4,color=myblue]
+    \myhbox[x=1,y=0,height=4,color=myblue]
+    \myvbox[x=3,y=0,height=4,color=myblue]
+    \myvbox[x=0,y=2,height=4,color=myblue]
+    \myvbox[x=1,y=1,height=4,color=myblue]
+    \myvbox[x=2,y=1,height=4,color=myblue]
+    \myhbox[x=1,y=3,height=4,color=myblue]
+    \myvbox[x=3,y=2,height=4,color=myblue]
+  \end{tikzpicture}
+  \begin{tikzpicture}[scale=1]
+    \draw[lightgray,line width=0.4pt,step=1] (0,0) grid (4,4);
+    \draw[black,line width=1.6pt] (0,0) rectangle (4,4);
+    
+    \myhbox[x=0,y=0,height=4,color=myblue]
+    \myhbox[x=2,y=0,height=4,color=myblue]
+    \myvbox[x=0,y=1,height=4,color=myblue]
+    \myhbox[x=1,y=1,height=4,color=myblue]
+    \myhbox[x=1,y=2,height=4,color=myblue]
+    \myvbox[x=3,y=1,height=4,color=myblue]
+    \myhbox[x=0,y=3,height=4,color=myblue]
+    \myhbox[x=2,y=3,height=4,color=myblue]
+  \end{tikzpicture}
+  \caption{The two most frequent solutions are very symmetrical}\label{fig:sym}
+\end{figure}
+
 \fr{About the Pearson test, give the degrees of freedom, $p$-value, etc.}
 
 \section{Experimental Methodology}
-We evaluated square grids of side $n\in\{4,6,8,10,12,14,16\}$. Each configuration was executed $10^6$ times. We recorded the mean runtime in microseconds, and the program memory in kilobytes. All experiments have been done on GNU/Linux CachyOS over a machine with a Core i9 9900 CPU and 32 GB of RAM. The C++ code has been compiled with g++ v16.2.1, with the -O3 optimization flag. The source code, the experimental setup and the result summaries can be found at URL
+We evaluated square grids of side $n\in\{4,6,8,10,12,14,16,18,20\}$. Each configuration was executed $10^6$ times. We recorded the mean runtime in microseconds, and the program memory in kilobytes. All experiments have been done on GNU/Linux CachyOS over a machine with a Core i9 9900 CPU and 32 GB of RAM. The C++ code has been compiled with g++ v16.2.1, with the -O3 optimization flag. The source code, the experimental setup and the result summaries can be found at URL
 %\href{https://anonymous.4open.science/r/...}{anonymous.4open.science/r/...}.
 % \href{https://github.com/richoux/Sabrina-s-Game/tree/...}{github.com/richoux/Sabrina-s-Game/tree/...}.
 
@@ -195,6 +457,8 @@ $10\times10$ & 50  & 710.46  & 8300\\
 $12\times12$ & 72  & 1475.76 & 8564\\
 $14\times14$ & 98  & 2760.32 & 8828\\
 $16\times16$ & 128 & 4736.52 & 9120\\
+$18\times18$ & 162 & 7555.95 & 9484\\
+$20\times20$ & 200 & 11898.37 & 9884\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -205,9 +469,9 @@ $16\times16$ & 128 & 4736.52 & 9120\\
 \caption{Number of while-loop iterations, mean runtime, and memory consumption as the square grid side increases.}\label{fig:scaling}
 \end{figure}
 
-The mean runtime remains below 5 ms even for the $16\times16$ grid. A descriptive power-law regression on the seven means gives approximately $T(n)=a n^{p}$ with $p=4.02$. This is not a complexity proof, but it suggests quartic growth over the measured range, substantially below the conservative generic bound given in the proof of Proposition~\ref{prop:complexity}. Runtime increases by a factor of about 273 between $n=4$ and $n=16$, while the number of cells increases by a factor of 16.
+The mean runtime remains below 12ms even for the $20\times20$ grid. A descriptive power-law regression on the seven means gives approximately $T(n)=a n^{p}$ with $p=4.02$. This is not a complexity proof, but it suggests quartic growth over the measured range, substantially below the conservative generic bound given in the proof of Proposition~\ref{prop:complexity}. Runtime increases by a factor of about 686 between $n=4$ and $n=20$, while the number of cells increases by a factor of 25.
 
-Measured memory increases by 1216 kB, or approximately 15.4\%, across the tested range. A linear fit against the grid side gives about 101 kB per additional row/column over this narrow interval. Because the measurement includes a large fixed program baseline, these values do not directly establish an asymptotic space complexity.
+Measured memory increases by 1980kB, or approximately 25\%, across the tested range. A linear fit against the grid side starting from \(10\times10\) gives about 156kB per additional row/column over this narrow interval. Because the measurement includes a large fixed program baseline, these values do not directly establish an asymptotic space complexity.
 
 \section{Discussion}
 The central result is practical rather than distributional. REK does not solve the initial uniform-sampling question, but it combines three useful properties: it always constructs a feasible tiling, it has a polynomial worst-case guarantee, and randomized BFS tie-breaking yields visibly different solutions. This makes it suitable for initializing evolutionary or other population-based methods without repair or rejection sampling.
@@ -219,7 +483,7 @@ Exact uniform samplers exist for important special regions, such as domino shuff
 Several limitations remain. First, the present scaling study covers only small squares. Second, mean runtime alone does not characterize variability; standard deviation and quantiles should be reported. 
 
 \section{Conclusion}
-We presented Random Edmonds--Karp for generating feasible solutions to the satisfaction version of Sabrina's Game. The method converts domino tiling into unit-capacity maximum flow and randomizes BFS tie-breaking. It is polynomial, returns valid tilings, and runs in milliseconds on square grids up to $16\times16$. It is not an exact uniform sampler, as demonstrated empirically on the $4\times4$ grid. Nevertheless, it offers a lightweight way to obtain varied feasible individuals for evolutionary search. Future work will quantify diversity more directly, compare REK with uniform or approximately uniform samplers, extend the experiments to larger regions, and measure the impact of initialization bias on the optimization version of Sabrina's Game.
+We presented Random Edmonds--Karp for generating feasible solutions to the satisfaction version of Sabrina's Game. The method converts domino tiling into unit-capacity maximum flow and randomizes BFS tie-breaking. It is polynomial, returns valid tilings, and runs in milliseconds on square grids up to $20\times20$. It is not an exact uniform sampler, as demonstrated empirically on the $4\times4$ grid. Nevertheless, it offers a lightweight way to obtain varied feasible individuals for evolutionary search. Future work will quantify diversity more directly, compare REK with uniform or approximately uniform samplers, extend the experiments to larger regions, and measure the impact of initialization bias on the optimization version of Sabrina's Game.
 
 \bibliographystyle{splncs04}
 \bibliography{references}
