@@ -1,5 +1,17 @@
 Draft notes
 ===========
+4x4 - 16x16
 Power-law exponent fitted to mean runtimes: 4.032
 Runtime coefficient a: 0.06602
 Linear memory fit: 100.50 kB per unit n + 7412.14 kB
+
+4x4 - 20x20
+Power-law exponent fitted to mean runtimes: 4.036
+Runtime coefficient a: 0.06544
+Linear memory fit: 122.47 kB per unit n + 7229.07 kB
+Coefficient of determination R² 0.96108
+
+10x10 - 20x20
+Linear memory fit: 156.74 kB per unit n + 6678.85 kB
+Coefficient of determination R² 0.99158
+

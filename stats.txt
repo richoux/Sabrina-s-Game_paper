@@ -32,3 +32,13 @@ Memory usage (in kb): 8828
 Number of iterations: 128
 Mean runtime (in microseconds): 4736.52
 Memory usage (in kb): 9120
+
+18x18
+Number of iterations: 162
+Mean runtime (in microseconds): 7555.95
+Memory usage (in kb): 9484
+
+20x20
+Number of iterations: 200
+Mean runtime (in microseconds): 11898.37
+Memory usage (in kb): 9884
