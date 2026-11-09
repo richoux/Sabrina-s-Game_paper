@@ -323,25 +323,77 @@ Edmonds--Karp repeatedly finds a shortest augmenting path in the residual networ
 % \EndIf
 % \end{algorithmic}
 % \end{algorithm}
+
+% \begin{algorithm}
+%   \DontPrintSemicolon
+%   $flow \gets \emptyset$\;
+%   \While{$\text{a simple path from S to T exists}$}{
+%     \ForEach{$edge\ (x,y) \text{ in the path}$}{
+%       \If{$(x,y) \text{ is an edge in the original graph}$}{
+%         $flow \gets flow \cup (x,y)$\;
+%       }
+%       \Else{
+%         $flow \gets flow \setminus (x,y)$\;
+%       }
+%       Flip edge $(x,y)$\;
+%     }          
+%   }
+%   \Return $flow$\;
+%   \caption{Ford-Fulkerson}\label{alg:rek} 
+% \end{algorithm}
+
 \begin{algorithm}
   \DontPrintSemicolon
   $flow \gets \emptyset$\;
-  \While{$\text{a simple path from S to T exists}$}{
-    \ForEach{$edge\ (x,y) \text{ in the path}$}{
-      \If{$(x,y) \text{ is an edge in the original graph}$}{
-        $flow \gets flow \cup (x,y)$\;
+  \While{$\text{source } S \text{ has a child}$}{
+    $path \gets S$\;
+    $path \gets make\_path(path)$\;
+    \For{$i\text{ from 0 to path.length-1}$}{
+      \If{$flow.contains(edge(path[i+1], path[i]))$}{
+        $flow.remove(edge(path[i+1], path[i]))$\;
       }
-      \Else{
-        $flow \gets flow \setminus (x,y)$\;
-      }
-      Flip edge $(x,y)$\;
-    }          
+      $flow.add(edge(path[i], path[i+1]))$\;
+      Flip $edge(path[i], path[i+1])$\;
+    }
   }
   \Return $flow$\;
-  \caption{Ford-Fulkerson}\label{alg:rek} 
+  \caption{Random Edmonds--Karp}\label{alg:rek} 
 \end{algorithm}
 
-\fr{This is not the right algo (FF instead of REK). To do later.}
+\begin{algorithm}
+  \DontPrintSemicolon
+  \KwIn{A path containing source $S$ only}
+  \KwOut{A random path from source $S$ to sink $T$}
+
+  $queue \gets emptyset$\;
+  $queue.push(S)$\;
+  \While{$queue~!=~\emptyset$}{
+    $current \gets queue.pop()$\;
+    \If{$current~==~T$}{
+      Stop\;
+    }
+    \Else{
+      Shuffle($current.children$)\;
+      \ForEach{$child \text{ in } current.children$}{
+        \If{$child \text{ not visited}$}{
+          $queue.push(child)$\;
+          Mark $child$ as visited\;
+        }
+      }
+    }
+  }
+  $stack \gets \emptyset$\;
+  \While{$current~!=~S$}{
+    $stack.push(current)$\;
+    $current \gets current.parent$\;
+  }
+  \While{$stack~!=~\emptyset$}{
+    $current \gets stack.pop()$\;
+    $path \gets concat(path, current)$\;
+  }
+  \Return $path$\;
+  \caption{make\_path}\label{alg:path} 
+\end{algorithm}
 
 \subsection{Correctness and complexity}
 
