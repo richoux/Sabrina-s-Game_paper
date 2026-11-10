@@ -136,7 +136,6 @@ A domino tiling is equivalent to a perfect matching in a grid graph. Since the s
 
 Our contributions are:
 \begin{itemize}
-  \item a flow formulation of the satisfaction version of Sabrina's Game;
   \item Random Edmonds--Karp, a simple randomized polynomial-time generator of valid tilings;
   \item an empirical rejection of exact uniformity on the $4\times4$ instance using $10^6$ samples; and
   \item a scaling study of iterations, runtime, and memory on all even square grids from $4\times4$ to $20\times20$, with $10^6$ runs per size.
@@ -192,8 +191,6 @@ The present work considers only satisfaction: finding any feasible $D$. This is 
   \end{tikzpicture}
   \caption{Left: An expected perfect tiling. Right: An invalid solution, with two cells not covered by any tile, a tile going outside the frame, and two overlapping tiles}\label{fig:tiling}
 \end{figure}
-
-\fr{Chessboard and bipartite graph figures}
 
 \begin{figure}
   \centering
@@ -419,8 +416,6 @@ Finding a path is done with Breadth-First Search, which is in \(O(|V|+|E|)\), an
 
 \subsection{Why the distribution is not uniform}
 Random tie-breaking does not assign equal probability to all perfect matchings. A final matching can be reached through many sequences of shortest augmenting paths, and different matchings need not have the same number or probability mass of such histories. On the $4\times4$ grid, which has 36 tilings, the frequencies observed over $10^6$ independent runs reject the uniform null hypothesis under Pearson's chi-squared test at the 5\% significance level. Thus REK should be described as a randomized feasible-solution generator, not as a uniform sampler.
-
-\fr{Figures from my slides}
 
 \begin{figure}
   \begin{tikzpicture}[scale=0.75]
