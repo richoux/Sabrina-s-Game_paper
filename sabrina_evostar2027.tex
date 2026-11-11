@@ -136,7 +136,7 @@ Population-based evolutionary algorithms need a sufficiently diverse initial pop
 
 The initial question of this study is whether feasible tilings can be generated both uniformly and in polynomial time. Uniformity is attractive because it avoids an algorithm-dependent bias in the initial population. However, practical evolutionary search may not require perfect uniformity: a fast generator that reliably returns valid and varied solutions can already be useful.
 
-A domino tiling is equivalent to a perfect matching in a grid graph. Since the square grid graph is bipartite, feasibility can be reduced to maximum flow. This observation gives a deterministic polynomial-time decision and construction procedure. Yet a fixed search order tends to return highly structured matchings. We therefore randomize the order in which breadth-first search explores vertices within Edmonds--Karp. The resulting method, called Randomized Edmonds--Karp (REK), preserves feasibility and polynomial-time termination, although it does not induce the uniform distribution over perfect matchings.
+A domino tiling is equivalent to a perfect matching in a grid graph. Since the square grid graph is bipartite, feasibility can be reduced to maximum flow. This observation gives a deterministic polynomial-time decision and construction procedure. Yet a fixed search order tends to return highly structured matchings. We therefore randomize the order in which breadth-first search explores vertices within Edmonds--Karp. The resulting method, called Randomized Edmonds--Karp (\rek), preserves feasibility and polynomial-time termination, although it does not induce the uniform distribution over perfect matchings.
 
 Our contributions are:
 \begin{itemize}
@@ -145,17 +145,15 @@ Our contributions are:
   \item a scaling study of iterations, runtime, and memory on all even square grids from $4\times4$ to $20\times20$, with $10^6$ runs per size.
 \end{itemize}
 
-\section{Sabrina's Game and Domino Tilings}
-Let $R_{m,n}=\{1,\ldots,m\}\times\{1,\ldots,n\}$ be an $m\times n$ rectangular grid. A domino is an unordered pair of adjacent cells. A feasible solution is a set $D$ of dominoes such that every cell occurs in exactly one domino. Therefore, $mn$ must be even.
+\section{Sabrina's Game}
+Let $R_{m,n}=\{1,\ldots,m\}\times\{1,\ldots,n\}$ be an $m\times n$ rectangular grid. A domino is an unordered pair of adjacent cells. A valid solution is a set $D$ of dominoes such that every cell occurs in exactly one domino. Therefore, $mn$ must be even.
 
 For the optimization version, each cell $u$ has a value $a_u$, and the objective is
 \begin{equation}
   \min_{D} \sum_{\{u,v\}\in D}|a_u-a_v|.
 \end{equation}
 
-\fr{Cite Daan's work}
-
-The present work considers only satisfaction: finding any feasible $D$. This is precisely the classical domino-tiling problem, equivalently a perfect matching of the grid graph~\cite{fusy2016random}.
+The present work considers only satisfaction: finding any valid $D$. This is precisely the classical domino-tiling problem, equivalently a perfect matching of the grid graph~\cite{fusy2016random}.
 
 \begin{figure}[t]
   \centering
@@ -176,7 +174,7 @@ The present work considers only satisfaction: finding any feasible $D$. This is 
     \draw[box,fill=myblue,myblue] (0+0.2,3+0.2) rectangle (0+1.8,3+0.8);
     \draw[box,fill=myblue,myblue] (2+0.2,3+0.2) rectangle (2+1.8,3+0.8);
   \end{tikzpicture}
-  \hfill
+  \hspace{1cm}
   \begin{tikzpicture}[scale=1.0]
     \draw[black,line width=0.4pt,step=1] (0,0) grid (4,4);
     \draw[black,line width=1.6pt] (0,0) rectangle (4,4);
@@ -199,6 +197,10 @@ The present work considers only satisfaction: finding any feasible $D$. This is 
   \caption{Left: An expected perfect tiling. Right: An invalid solution, with two cells not covered by any tile, a tile going outside the frame, and two overlapping tiles}\label{fig:tiling}
 \end{figure}
 
+\subsection{Domino Tiling and Maximum Flow}
+
+There exists a well-known correspondance between the domino tiling problem and the maximum flow problem. To explain how the finding a valid solution to Sabrina's Game boils down finding a maximum flow in a graph, let's paint a board of our problem as a Chessboard, as illustrated on the left side of Figure~\ref{fig:chess}. We can replace each square on the board with a white or black node. These nodes are connected with an edge if their corresponding squares are adjacent on the board. This gives the graph on the right side of Figure~\ref{fig:chess}.
+
 \begin{figure}
   \centering
   \begin{tikzpicture}[scale=1.0]
@@ -212,6 +214,7 @@ The present work considers only satisfaction: finding any feasible $D$. This is 
     \draw[fill=black,black] (1,2) rectangle (2,3);
     \draw[fill=black,black] (3,2) rectangle (4,3);
   \end{tikzpicture}
+  \hspace{1cm}
   \begin{tikzpicture}[scale=1.0]
     \draw[lightgray,line width=0.4pt,step=1] (0,0) grid (4,3);
     \draw[black,line width=1.6pt] (0,0) rectangle (4,3);
@@ -239,45 +242,57 @@ The present work considers only satisfaction: finding any feasible $D$. This is 
     \node[minimum size=0.7cm,circle,draw] (k) [black,fill=white] at (2.5,0.5) {k};
     \node[minimum size=0.7cm,circle,draw] (l) [white,fill=black] at (3.5,0.5) {l};
   \end{tikzpicture}
-  \begin{tikzpicture}[scale=1.0]
-    \node[minimum size=0.7cm,circle,draw] (a) [black,fill=white] at (0,4) {a};
-    \node[minimum size=0.7cm,circle,draw] (c) [black,fill=white] at (1,4) {c};
-    \node[minimum size=0.7cm,circle,draw] (f) [black,fill=white] at (2,4) {f};
-    \node[minimum size=0.7cm,circle,draw] (h) [black,fill=white] at (3,4) {h};
-    \node[minimum size=0.7cm,circle,draw] (i) [black,fill=white] at (4,4) {i};
-    \node[minimum size=0.7cm,circle,draw] (k) [black,fill=white] at (5,4) {k};
+  \caption{A Sabrina's Game board seen as a Chessboard}\label{fig:chess}
+\end{figure}
 
-    \node[minimum size=0.7cm,circle,draw] (b) [white,fill=black] at (0,2) {b};
-    \node[minimum size=0.7cm,circle,draw] (d) [white,fill=black] at (1,2) {d};
-    \node[minimum size=0.7cm,circle,draw] (e) [white,fill=black] at (2,2) {e};
-    \node[minimum size=0.7cm,circle,draw] (g) [white,fill=black] at (3,2) {g};
-    \node[minimum size=0.7cm,circle,draw] (j) [white,fill=black] at (4,2) {j};
-    \node[minimum size=0.7cm,circle,draw] (l) [white,fill=black] at (5,2) {l};
+It is easy to see that the graph is, in fact, bipartite, since none of the white nodes (and, likewise, none of the black nodes) are connected to one another. Therefore, the graph on the right side of Figure~\ref{fig:chess} is the same as the one on the left side of Figure~\ref{fig:flownetwork}. If we add two dummy nodes, a source \(s\) and a sink \(t\) to this graph, connect \(s\) to all white nodes and \(t\) to all black nodes, and turns each edge into an arc following the orientation \(s \rightarrow\)  white nodes \(\rightarrow\) black nodes \(\rightarrow t\), as despicted on the right side of Figure~\ref{fig:flownetwork}, and finally set a capacity of 1 on each ``white-to-black'' arc and 0 to all other arcs, we obtain a flow network on which we can solve the maximum flow problem to find a valid solution to the original Sabrina's Game board: a flow of value $mn/2$ is equivalent to a perfect matching and thus to a valid tiling. This correspondance is proved later with Corollary~\ref{cor:correct}.
 
-    \draw[black,line width=1pt] (a) -- (b);
-    \draw[black,line width=1pt] (a) -- (e);
+\begin{figure}
+  \centering
+  \vspace{-1cm}
+  \(\vcenter{\hbox{
+    \begin{tikzpicture}[scale=1.0]
+      \node[minimum size=0.7cm,circle,draw] (a) [black,fill=white] at (0,4) {a};
+      \node[minimum size=0.7cm,circle,draw] (c) [black,fill=white] at (1,4) {c};
+      \node[minimum size=0.7cm,circle,draw] (f) [black,fill=white] at (2,4) {f};
+      \node[minimum size=0.7cm,circle,draw] (h) [black,fill=white] at (3,4) {h};
+      \node[minimum size=0.7cm,circle,draw] (i) [black,fill=white] at (4,4) {i};
+      \node[minimum size=0.7cm,circle,draw] (k) [black,fill=white] at (5,4) {k};
 
-    \draw[black,line width=1pt] (c) -- (b);
-    \draw[black,line width=1pt] (c) -- (d);
-    \draw[black,line width=1pt] (c) -- (g);
+      \node[minimum size=0.7cm,circle,draw] (b) [white,fill=black] at (0,2) {b};
+      \node[minimum size=0.7cm,circle,draw] (d) [white,fill=black] at (1,2) {d};
+      \node[minimum size=0.7cm,circle,draw] (e) [white,fill=black] at (2,2) {e};
+      \node[minimum size=0.7cm,circle,draw] (g) [white,fill=black] at (3,2) {g};
+      \node[minimum size=0.7cm,circle,draw] (j) [white,fill=black] at (4,2) {j};
+      \node[minimum size=0.7cm,circle,draw] (l) [white,fill=black] at (5,2) {l};
 
-    \draw[black,line width=1pt] (f) -- (b);
-    \draw[black,line width=1pt] (f) -- (e);
-    \draw[black,line width=1pt] (f) -- (g);
-    \draw[black,line width=1pt] (f) -- (j);
+      \draw[black,line width=1pt] (a) -- (b);
+      \draw[black,line width=1pt] (a) -- (e);
 
-    \draw[black,line width=1pt] (h) -- (d);
-    \draw[black,line width=1pt] (h) -- (g);
-    \draw[black,line width=1pt] (h) -- (l);
+      \draw[black,line width=1pt] (c) -- (b);
+      \draw[black,line width=1pt] (c) -- (d);
+      \draw[black,line width=1pt] (c) -- (g);
 
-    \draw[black,line width=1pt] (i) -- (e);
-    \draw[black,line width=1pt] (i) -- (j);
+      \draw[black,line width=1pt] (f) -- (b);
+      \draw[black,line width=1pt] (f) -- (e);
+      \draw[black,line width=1pt] (f) -- (g);
+      \draw[black,line width=1pt] (f) -- (j);
 
-    \draw[black,line width=1pt] (k) -- (g);
-    \draw[black,line width=1pt] (k) -- (j);
-    \draw[black,line width=1pt] (k) -- (l);
-  \end{tikzpicture}
-  \begin{tikzpicture}[scale=1.0]
+      \draw[black,line width=1pt] (h) -- (d);
+      \draw[black,line width=1pt] (h) -- (g);
+      \draw[black,line width=1pt] (h) -- (l);
+
+      \draw[black,line width=1pt] (i) -- (e);
+      \draw[black,line width=1pt] (i) -- (j);
+
+      \draw[black,line width=1pt] (k) -- (g);
+      \draw[black,line width=1pt] (k) -- (j);
+      \draw[black,line width=1pt] (k) -- (l);
+    \end{tikzpicture}
+  }}\)
+  \hfill
+  \(\vcenter{\hbox{
+    \begin{tikzpicture}[scale=1.0]
     \node[minimum size=0.7cm,circle,draw] (s) [black,fill=white] at (2.5,6) {s};
     \node[minimum size=0.7cm,circle,draw] (t) [black,fill=white] at (2.5,0) {t};
 
@@ -332,10 +347,10 @@ The present work considers only satisfaction: finding any feasible $D$. This is 
     \draw[-Stealth,black,line width=1pt] (j) -- (t);
     \draw[-Stealth,black,line width=1pt] (l) -- (t);
   \end{tikzpicture}
-  \caption{Grid as a Chessboard}\label{fig:chessboard}
+}
+}\)
+  \caption{Flow network corresponding to a Sabrina's Game board}\label{fig:flownetwork}
 \end{figure}
-
-Color the grid as a chessboard and let $B$ and $W$ denote the black and white cells. Every adjacency joins one cell in $W$ to one in $B$, so the grid graph $G=(W\cup B,E)$ is bipartite. Construct a flow network by adding a source $s$, a sink $t$, arcs from $s$ to every vertex in $W$ with a capacity of 0, arcs corresponding to grid adjacencies from $W$ to $B$ with a capacity of 1, and arcs from every vertex in $B$ to $t$ with a capacity of 0. An integral flow of value $mn/2$ is equivalent to a perfect matching and thus to a valid tiling.
 
 \section{Randomized Edmonds--Karp}
 The Ford--Fulkerson algorithm (Algorithm~\ref{algo:ff}) solves maximum flow problems. It manipulates a residual graph in addition to the input graph, altering it as it carries out its execution. For the sake of conciseness and readability, we chose to omit any reference to a residual graph in the pseudocode provided below.
@@ -461,25 +476,26 @@ We call Randomized Edmonds--Karp (\rek) algorithm the combination of the Ford--F
 We evaluated square grids of side $n\in\{4,6,8,10,12,14,16,18,20\}$. Each configuration was executed $10^6$ times. We recorded the mean runtime in microseconds, and the program memory in kilobytes. All experiments have been done on GNU/Linux CachyOS over a machine with a Core i9 9900 CPU and 32 GB of RAM. The C++ code has been compiled with g++ v16.2.1, with the -O3 optimization flag. The source code and the experimental result summary can be found at \href{https://anonymous.4open.science/r/sabrinasgame/}{anonymous.4open.science/r/sabrinasgame/}.
 % \href{https://github.com/richoux/Sabrina-s-Game/tree/evostar2027}{github.com/richoux/Sabrina-s-Game/tree/evostar2027}.
 
-The number of while-loop interations is deterministic in these experiments: all grids are tileable and every augmentation carries one unit, hence $n^2/2$ iterations are required. Runtime and memory values are aggregate measurements supplied by the implementation.
+Runtime and memory values are aggregate measurements supplied by the implementation. As discussed in the next subsection, the number of interations of the algorithm is deterministic.
 
 \subsection{Results}
+
 \begin{table}[t]
 \centering
 \caption{Performance over $10^6$ runs per square grid size.}\label{tab:results}
 \begin{tabular}{rrrr}
 \toprule
-Grid & Iterations & Mean runtime ($\mu$s) & Memory (kB)\\
+Grid & \quad Iterations & \quad Mean runtime ($\mu$s) & \quad Memory (kB)\\
 \midrule
-$4\times4$   & 8   & 17.33   & 7904\\
-$6\times6$   & 18  & 94.38   & 8036\\
-$8\times8$   & 32  & 285.17  & 8168\\
-$10\times10$ & 50  & 710.46  & 8300\\
-$12\times12$ & 72  & 1475.76 & 8564\\
-$14\times14$ & 98  & 2760.32 & 8828\\
-$16\times16$ & 128 & 4736.52 & 9120\\
-$18\times18$ & 162 & 7555.95 & 9484\\
-$20\times20$ & 200 & 11898.37 & 9884\\
+$4\times4$   & 8   & 17.33   & 7,904\\
+$6\times6$   & 18  & 94.38   & 8,036\\
+$8\times8$   & 32  & 285.17  & 8,168\\
+$10\times10$ & 50  & 710.46  & 8,300\\
+$12\times12$ & 72  & 1,475.76 & 8,564\\
+$14\times14$ & 98  & 2,760.32 & 8,828\\
+$16\times16$ & 128 & 4,736.52 & 9,120\\
+$18\times18$ & 162 & 7,555.95 & 9,484\\
+$20\times20$ & 200 & 11,898.37 & 9,884\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -490,13 +506,21 @@ $20\times20$ & 200 & 11898.37 & 9884\\
 \caption{Number of while-loop iterations, mean runtime, and memory consumption as the square grid side increases.}\label{fig:scaling}
 \end{figure}
 
-The mean runtime remains below 12ms even for the $20\times20$ grid. A descriptive power-law regression on the seven means gives approximately $T(n)=a n^{p}$ with $p=4.02$. This is not a complexity proof, but it suggests quartic growth over the measured range, substantially below the conservative generic bound given in the proof of Proposition~\ref{prop:complexity}. Runtime increases by a factor of about 686 between $n=4$ and $n=20$, while the number of cells increases by a factor of 25.
+The raw results are given in Table~\ref{tab:results}, and depicted as measurement curves and regressions in Figure~\ref{fig:scaling}. 
 
-Measured memory increases by 1980kB, or approximately 25\%, across the tested range. A linear fit against the grid side starting from \(10\times10\) gives about 156kB per additional row/column over this narrow interval. Because the measurement includes a large fixed program baseline, these values do not directly establish an asymptotic space complexity.
+The number of while-loop interations is deterministic in these experiments: all grids are tileable and every augmentation carries one unit, hence $n^2/2$ iterations are required. This is illustrated by the plot on the left of Figure~\ref{fig:scaling}.  
+
+The mean runtime remains below 12ms even for the $20\times20$ grid. A descriptive power-law regression on the means gives approximately $R(n)=0.06544 n^{4.036}$. This is depicted by the plot in the middle of Figure~\ref{fig:scaling}. This is not a complexity proof, but it suggests quartic growth over the measured range, substantially below the conservative generic bound given in the proof of Proposition~\ref{prop:complexity}. Runtime increases by a factor of about 686 between $n=4$ and $n=20$, while the number of cells increases by a factor of 25.
+
+Measured memory increases by 1980kB, or approximately 25\%, across the tested range. A linear fit against the grid side starting from \(10\times10\) gives about 156kB per additional row/column over this narrow interval. Because the measurement includes a large fixed program baseline, these values do not directly establish an asymptotic space complexity. A linear regression of measured memory against the grid side gives \(M(n)=122.47n+7229.07\)kB, with \(R^2=0.99158\). This corresponds to an average increase of approximately 122.47kB per additional unit of grid side over the measured range. Since the measurements include a substantial fixed program baseline, this empirical fit should not be interpreted as an asymptotic space-complexity result. The plot on the right in Figure~\ref{fig:scaling} illustrates the measured memory increases and its associated regression.
+
+The coefficient of determination is \(R^2=0.99158\), meaning that the linear model explains approximately 99.16\% of the observed variation in memory consumption over the measured range. However, this goodness of fit does not establish a linear asymptotic space complexity.
 
 \section{Discussion}
 %\subsection{Why the distribution is not uniform}
-Random tie-breaking does not assign equal probability to all perfect matchings. A final matching can be reached through many sequences of shortest augmenting paths, and different matchings need not have the same number or probability mass of such histories. On the $4\times4$ grid, which has 36 tilings, the frequencies observed over $10^6$ independent runs reject the uniform null hypothesis under Pearson's chi-squared test at the 5\% significance level. Thus REK should be described as a randomized feasible-solution generator, not as a uniform sampler.
+Random tie-breaking does not assign equal probability to all perfect matchings. A final matching can be reached through many sequences of shortest augmenting paths, and different matchings need not have the same number or probability mass of such histories. Figure~\ref{fig:notuniform} illustrated the frequency distribution among the 36 valid tilings of a $4\times4$ grid, after 1,000,000 independent runs of the \rek algorithm. We can observe that two solutions, number 13 and number 29, are found significatively more often than the others. These two solutions, shown in Figure~\ref{fig:notuniform}, are the most symmetrial ones, which explains their frequency, as there are many ways for the algorithm to arrive at these solutions.
+
+The frequencies observed in Figure~\ref{fig:notuniform} reject the uniform null hypothesis under Pearson's chi-squared test at the 5\% significance level: with 35 degrees of freedom and a p-value of 0.05, we have a critical value of 49.8, but the chi-squared value is greatly higher, with a value of 140,869. Thus the \rek algorithm should be described as a randomized valid-solution generator, not as a uniform sampler.
 
 \tikzset{
   sol13/.pic={
@@ -574,18 +598,12 @@ Random tie-breaking does not assign equal probability to all perfect matchings. 
   \caption{Solution distribution over 1,000,000 runs on a \(4\times4\) grid. The two most frequent solutions are depicted.}\label{fig:notuniform}
 \end{figure}
 
-\fr{About the Pearson test, give the degrees of freedom, $p$-value, etc.}
+The central result is practical rather than distributional. The \rek algorithm does not solve the initial uniform-sampling question, but it combines three useful properties: it always constructs a valid tiling, it has a polynomial worst-case guarantee, and randomized BFS tie-breaking yields visibly different solutions. This makes it suitable for initializing evolutionary or other population-based methods without repair or rejection sampling.
 
-The central result is practical rather than distributional. REK does not solve the initial uniform-sampling question, but it combines three useful properties: it always constructs a feasible tiling, it has a polynomial worst-case guarantee, and randomized BFS tie-breaking yields visibly different solutions. This makes it suitable for initializing evolutionary or other population-based methods without repair or rejection sampling.
-
-The non-uniformity result requires careful interpretation. Rejecting exact uniformity does not show that the distribution is unusably concentrated. % For evolutionary computation, more relevant diagnostics include entropy, effective support size, pairwise Hamming distance between matchings, arc-inclusion marginals, and downstream optimization performance. These should be added in the next experimental revision.
-Exact uniform samplers exist for important special regions, such as domino shuffling for Aztec diamonds, while more general approaches often use Markov chains~\cite{nordenstam2008shuffling,fusy2016random}. Their objectives and computational trade-offs differ from the deliberately simple REK procedure.
-\fr{Not really sure about this -> to check}
-
-Several limitations remain. First, the present scaling study covers only small squares. Second, mean runtime alone does not characterize variability; standard deviation and quantiles should be reported. 
+The non-uniformity result requires careful interpretation. Rejecting exact uniformity does not show that the distribution is unusably concentrated. Exact uniform samplers exist for important special regions, such as domino shuffling for Aztec diamonds~\cite{fusy2016random,nordenstam2008shuffling}. Their objectives and computational trade-offs differ from the deliberately simple \rek procedure. For evolutionary computation, other relevant properties include, among others, entropy, effective support size, pairwise Hamming distance between individuals, and population models such as the island model. 
 
 \section{Conclusion}
-We presented Randomized Edmonds--Karp for generating feasible solutions to the satisfaction version of Sabrina's Game. The method converts domino tiling into unit-capacity maximum flow and randomizes BFS tie-breaking. It is polynomial, returns valid tilings, and runs in milliseconds on square grids up to $20\times20$. It is not an exact uniform sampler, as demonstrated empirically on the $4\times4$ grid. Nevertheless, it offers a lightweight way to obtain varied feasible individuals for evolutionary search. Future work will quantify diversity more directly, compare REK with uniform or approximately uniform samplers, extend the experiments to larger regions, and measure the impact of initialization bias on the optimization version of Sabrina's Game.
+We presented Randomized Edmonds--Karp for generating feasible solutions to the satisfaction version of Sabrina's Game. The method converts domino tiling into unit-capacity maximum flow and randomizes BFS tie-breaking. It is polynomial, returns valid tilings, and runs in milliseconds on square grids up to $20\times20$. It is not an exact uniform sampler, as demonstrated empirically on the $4\times4$ grid. Nevertheless, it offers a lightweight way to obtain varied feasible individuals for evolutionary search. Future work will quantify diversity more directly, compare the \rek algorithm with uniform or approximately uniform samplers, extend the experiments to larger regions, and measure the impact of initialization bias on the optimization version of Sabrina's Game.
 
 \bibliographystyle{splncs04}
 \bibliography{references}
