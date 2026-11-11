@@ -132,18 +132,22 @@ Sabrina's Game asks for a domino tiling of a rectangular grid that minimizes a c
 \end{abstract}
 
 \section{Introduction}
-Population-based evolutionary algorithms need a sufficiently diverse initial population. For highly constrained combinatorial problems, generating feasible individuals can itself be a major obstacle. Sabrina's Game is a deliberately simple example: a rectangular array of values must be partitioned into horizontal or vertical dominoes, and the optimization version minimizes the sum of the absolute differences between the two values covered by each domino. Its satisfaction version ignores cell values and asks only for a valid domino tiling.
+``Sabrina's Game'', a pedestrianly simple game apparently named after a master's student, found its introduction at EvoSTAR 2026 [ref]. It concerns a rectangular matrix (the `board') containing an even number of cells with integer values inside which needs to be completely covered with 1x2 dominoes. Each domino then covers two integer-valued cells, and one domino's objective value is absolute difference between both covered integers. If the entire board gets covered  without overlapping tiles or uncovered cells, a solution is \text{valid} and the objective value of the solution is sum of all dominoes (See [ref introductory figure]).
 
-The initial question of this study is whether feasible tilings can be generated both uniformly and in polynomial time. Uniformity is attractive because it avoids an algorithm-dependent bias in the initial population. However, practical evolutionary search may not require perfect uniformity: a fast generator that reliably returns valid and varied solutions can already be useful.
+At the time of writing, we are unaware of a proof of the problem's complexity and whether a polynomial time solving algorithm exists. It is surely solvable in time complexity $2^{n/2}$ though, as a board with $n$ cells must have $n/2$ dominoes, each of which can either be placed horizontally or vertically. Since valid solutions do not allow for empty cells, a solution can be `read' left-right-top-bottom as a binary string, skipping earlier covered cells. As such, a depth-first search algorithm can generate all possible solutions in $2^{n/2}$ time and therefore, the problem is at most NP-hard.
 
-A domino tiling is equivalent to a perfect matching in a grid graph. Since the square grid graph is bipartite, feasibility can be reduced to maximum flow. This observation gives a deterministic polynomial-time decision and construction procedure. Yet a fixed search order tends to return highly structured matchings. We therefore randomize the order in which breadth-first search explores vertices within Edmonds--Karp. The resulting method, called Randomized Edmonds--Karp (\rek), preserves feasibility and polynomial-time termination, although it does not induce the uniform distribution over perfect matchings.
+A depth-first search however, would also generate a (large?) number of invalid solutions, with dominoes either overlapping, or protruding the board's edge,  leaving empty cells. Besides, algorithms of exponential complexity (or even high-polynomial complexity) practically forbid efficient problem solving. A useful alternative is usually found in evolutionary algorithms, but this is where the cinch persides for Sabrina's game: supposedly, it cannot be sampled: ``I conjecture there is no algorithm that can uniformly random sample valid configurations in deterministic polynomial time.'' [REF].
 
-Our contributions are:
-\begin{itemize}
-  \item Randomized Edmonds--Karp, a simple randomized polynomial-time generator of valid tilings;
-  \item an empirical rejection of exact uniformity on the $4\times4$ instance using $10^6$ samples; and
-  \item a scaling study of iterations, runtime, and memory on all even square grids from $4\times4$ to $20\times20$, with $10^6$ runs per size.
-\end{itemize}
+In this paper, we will show that conjecture is at least partly false. We present a randomized version of the Edmonds-Karp algorithm, which samples valid solutions in polynomial time. From randomizing the queue in the breadth-first subroutine of the algorithm, the returned solutions are also random. However, experimentation shows that these are not uniformly distributed, leaving the bold conjecture from the previous paragraph partly intact. The contributions of this study are:
+
+\begin{enumerate}
+  \item Randomized Edmonds--Karp, a simple randomized polynomial-time algorithm for generating random valid solutions to Sabrina's game.
+  \item An empirical rejection of exact uniformity on the $4\times4$ instance extracted from $10^6$ samples.
+  \item a scaling study of runtime in iterations, wall clock time and memory usage on boards sized $\in 4\times4, 6\times6, ... 20\times20$, with $10^6$ algorithmic runs per size.
+\end{enumerate}
+
+\section{Related Work}
+
 
 \section{Sabrina's Game}
 Let $R_{m,n}=\{1,\ldots,m\}\times\{1,\ldots,n\}$ be an $m\times n$ rectangular grid. A domino is an unordered pair of adjacent cells. A valid solution is a set $D$ of dominoes such that every cell occurs in exactly one domino. Therefore, $mn$ must be even.
