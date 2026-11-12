@@ -132,7 +132,7 @@ Sabrina's Game asks for a domino tiling of a rectangular grid that minimizes a c
 \end{abstract}
 
 \section{Introduction}
-``Sabrina's Game'', a pedestrianly simple game apparently named after a master's student, found its introduction at EvoSTAR~\cite{SabrinasGame2026}. It concerns a rectangular grid (the `board') containing an even number of cells with integer values inside which needs to be completely covered with 1x2 dominoes. Each domino then covers two integer-valued cells, and one domino's objective value is absolute difference between both covered integers. If the entire board gets covered without overlapping tiles or uncovered cells, a solution is \text{valid} and the objective value of the solution is sum of all dominoes (See [ref introductory figure]).
+``Sabrina's Game'', a pedestrianly simple game apparently named after a master's student, found its introduction at EvoSTAR~\cite{SabrinasGame2026}. It concerns a rectangular grid (the `board') containing an even number of cells with integer values inside which needs to be completely covered with 1x2 dominoes. Each domino then covers two integer-valued cells, and one domino's objective value is absolute difference between both covered integers. If the entire board gets covered without overlapping tiles or uncovered cells, a solution is \text{valid} and the objective value of the solution is sum of all dominoes (See Figure \ref{fig:tiling}).
 
 At the time of writing, we are unaware of a proof of the problem's complexity and whether a polynomial time solving algorithm exists. It is surely solvable in time complexity $2^{(m \times n)/2}$ though, as a board with $m \times n$ cells must have $(m \times n)/2$ dominoes, each of which can either be placed horizontally or vertically. Since valid solutions do not allow for empty cells, a solution can be `read' left-right-top-bottom as a binary string, skipping earlier covered cells. As such, a depth-first search algorithm can generate all possible solutions in $2^{(m \times n)/2}$ time and therefore, the problem is at most NP-hard.
 
@@ -146,12 +146,14 @@ In this paper, we will show that conjecture is at least partly false. We present
   \item a scaling study of runtime in iterations, runtime and memory usage on boards sized $\in 4\times4, 6\times6, ... 20\times20$, with $10^6$ algorithmic runs per size.
 \end{enumerate}
 
-The rest of this paper is organized as follows: in the next section, we will discuss some related work, after which we will introduce the Randomized Edmonds--Karp algorithm in section \ref{}. Experimental results follow in section \ref{} after which a conclusion\&discussion in section \ref{} wraps up the paper.
+\noindent The rest of this paper is organized as follows: in the next section, we will discuss some related work, after which we will introduce the Randomized Edmonds--Karp algorithm in section \ref{sec:randomizededmondskarp}. Experimental results follow in Section \ref{sec:experimentsandresults} after which the discussion in Section \ref{sec:discussion} and conclusion in Section \ref{sec:discussion} and wrap up the paper.
 
 \section{Related Work}
+\label{sec:relatedwork}
 
 
 \section{Sabrina's Game}
+
 Let $R_{m,n}=\{1,\ldots,m\}\times\{1,\ldots,n\}$ be an $m\times n$ rectangular grid. A domino is an unordered pair of adjacent cells. A valid solution is a set $D$ of dominoes such that every cell occurs in exactly one domino. Therefore, $mn$ must be even.
 
 For the optimization version, each cell $u$ has a value $a_u$, and the objective is
@@ -446,6 +448,7 @@ It is easy to see that the graph is, in fact, bipartite, since none of the white
 \end{figure}
 
 \section{Randomized Edmonds--Karp}
+\label{sec:randomizededmondskarp}
 The Ford--Fulkerson algorithm (Algorithm~\ref{algo:ff}) solves maximum flow problems. It manipulates a residual graph in addition to the input graph, altering it as it carries out its execution. For the sake of conciseness and readability, we chose to omit any reference to a residual graph in the pseudocode provided below.
 
 The correspondance between the maximum flow problem with capacities as describe above and the domino tiling problem is well-known. Since the Ford--Fulkerson algorithm runs in polynomial time and can be used to find valid solutions to the Sabrina's Game problem, finding a polynomial-time, uniformly random algorithm to generate valid solutions boils down to this question: ``Can we modify the Ford--Fulkerson algorithm to output uniformly random valid solutions?''
@@ -565,6 +568,7 @@ We call Randomized Edmonds--Karp (\rek) algorithm the combination of the Ford--F
 \end{proof}
 
 \section{Experiments and Results}
+\label{sec:experimentsandresults}
 \subsection{Experimental Methodology}
 We evaluated square grids of side $n\in\{4,6,8,10,12,14,16,18,20\}$. Each configuration was executed $10^6$ times. We recorded the mean runtime in microseconds, and the program memory in kilobytes. All experiments have been done on GNU/Linux CachyOS over a machine with a Core i9 9900 CPU and 32 GB of RAM. The C++ code has been compiled with g++ v16.2.1, with the -O3 optimization flag. The source code and the experimental result summary can be found at \href{https://anonymous.4open.science/r/sabrinasgame/}{anonymous.4open.science/r/sabrinasgame/}.
 % \href{https://github.com/richoux/Sabrina-s-Game/tree/evostar2027}{github.com/richoux/Sabrina-s-Game/tree/evostar2027}.
@@ -610,6 +614,7 @@ Measured memory increases by 1980kB, or approximately 25\%, across the tested ra
 The coefficient of determination is \(R^2=0.99158\), meaning that the linear model explains approximately 99.16\% of the observed variation in memory consumption over the measured range. However, this goodness of fit does not establish a linear asymptotic space complexity.
 
 \section{Discussion}
+\label{sec:discussion}
 %\subsection{Why the distribution is not uniform}
 Random tie-breaking does not assign equal probability to all perfect matchings. A final matching can be reached through many sequences of shortest augmenting paths, and different matchings need not have the same number or probability mass of such histories. Figure~\ref{fig:notuniform} illustrated the frequency distribution among the 36 valid tilings of a $4\times4$ grid, after 1,000,000 independent runs of the \rek algorithm. We can observe that two solutions, number 13 and number 29, are found significatively more often than the others. These two solutions, shown in Figure~\ref{fig:notuniform}, are the most symmetrial ones, which explains their frequency, as there are many ways for the algorithm to arrive at these solutions.
 
@@ -696,6 +701,7 @@ The central result is practical rather than distributional. The \rek algorithm d
 The non-uniformity result requires careful interpretation. Rejecting exact uniformity does not show that the distribution is unusably concentrated. Exact uniform samplers exist for important special regions, such as domino shuffling for Aztec diamonds~\cite{fusy2016random,nordenstam2008shuffling}. Their objectives and computational trade-offs differ from the deliberately simple \rek procedure. For evolutionary computation, other relevant properties include, among others, entropy, effective support size, pairwise Hamming distance between individuals, and population models such as the island model. 
 
 \section{Conclusion}
+\label{sec:conclusion}
 We presented Randomized Edmonds--Karp for generating feasible solutions to the satisfaction version of Sabrina's Game. The method converts domino tiling into unit-capacity maximum flow and randomizes BFS tie-breaking. It is polynomial, returns valid tilings, and runs in milliseconds on square grids up to $20\times20$. It is not an exact uniform sampler, as demonstrated empirically on the $4\times4$ grid. Nevertheless, it offers a lightweight way to obtain varied feasible individuals for evolutionary search. Future work will quantify diversity more directly, compare the \rek algorithm with uniform or approximately uniform samplers, extend the experiments to larger regions, and measure the impact of initialization bias on the optimization version of Sabrina's Game.
 
 \bibliographystyle{splncs04}
