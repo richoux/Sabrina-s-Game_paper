@@ -568,11 +568,9 @@ We call Randomized Edmonds--Karp (\rek) algorithm the combination of the Ford--F
     \item No cells remain uncovered by a domino.
   \end{enumerate}
   
-  An arc \(a\rightarrow b\) in the flow correponds to place a domino covering cells \(a\) and \(b\) on the grid. Thus, by construction, there is no way to place a domino outside the boundary of the grid.
+\noindent An arc \(a\rightarrow b\) in the flow correponds to place a domino covering cells \(a\) and \(b\) on the grid. Thus, by construction, there is no way to place a domino outside the boundary of the grid. Two dominos overlaps the same cell if we have two arcs in the flow sharing the same node. Lemma~\ref{lem:notwice} shows this is impossible.
 
-  Two dominos overlaps the same cell if we have two arcs in the flow sharing the same node. Lemma~\ref{lem:notwice} shows this is impossible.
-
-  By Proposition~\ref{prop:return}, we know that the \rek algorithm returns a maximum flow of value $mn/2$. Since only arcs between white and black nodes have a capacity of 1 (all arcs from \(s\) and towards \(t\) have a capacity of 0), it implies that the flow contains $mn/2$ arcs from white nodes to black nodes, correponding to $mn/2$ dominos to place on the grid. Since no dominos overlap each others and none goes beyond the grid boundary, all cells are necessarily covered by a unique domino. \qed
+By Proposition~\ref{prop:return}, we know that the \rek algorithm returns a maximum flow of value $mn/2$. Since only arcs between white and black nodes have a capacity of 1 (all arcs from \(s\) and towards \(t\) have a capacity of 0), it implies that the flow contains $mn/2$ arcs from white nodes to black nodes, correponding to $mn/2$ dominos to place on the grid. Since no dominos overlap each others and none goes beyond the grid boundary, all cells are necessarily covered by a unique domino. \qed
 \end{proof}
 
 \begin{proposition}\label{prop:complexity}
