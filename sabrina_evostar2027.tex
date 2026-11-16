@@ -1,5 +1,5 @@
 % Comment with '%' to remove all comments at once
-\def \Commentaires{}
+%\def \Commentaires{}
 
 \documentclass[svgnames,table,runningheads]{llncs}
 \usepackage[english]{babel}
@@ -37,7 +37,6 @@
 \usepackage{xcolor}
 
 \newcommand{\rek}{\textsc{rek}\xspace}
-
 
 \ifdefined\Commentaires
 \newcommand{\gn}[1]{\noindent{\color{orange}GN: #1}\xspace}
@@ -107,76 +106,77 @@
 \title{Randomized Edmonds--Karp for Generating \\Valid Solutions to Sabrina's Game}
 \titlerunning{Randomized Edmonds--Karp for Sabrina's Game}
 
-% \author{Anonymous Author(s)}
-% \authorrunning{Anonymous Author(s)}
-% \institute{Anonymous institute(s)\\\email{anonymous@example.org}}
+\author{Anonymous Author(s)}
+\authorrunning{Anonymous Author(s)}
+\institute{Anonymous institute(s)\\\email{anonymous@example.org}}
 
-\author{Florian Richoux\inst{1}\orcidID{0000-0003-4693-379X} \and \\
-Daan van den Berg\inst{2}\orcidID{0000-0001-5060-3342}}
-%
-\authorrunning{F. Richoux and D. van den Berg}
-\institute{AIST, Japan\\
-\email{florian.richoux@aist.go.jp}\\
-\and
-Vrije Universiteit Amsterdam, The Netherlands\\
-\email{d.van.den.berg@vu.nl}
-}
+% \author{Florian Richoux\inst{1}\orcidID{0000-0003-4693-379X} \and \\
+% Daan van den Berg\inst{2}\orcidID{0000-0001-5060-3342}}
+% %
+% \authorrunning{F. Richoux and D. van den Berg}
+% \institute{AIST, Japan\\
+% \email{florian.richoux@aist.go.jp}\\
+% \and
+% Vrije Universiteit Amsterdam, The Netherlands\\
+% \email{d.van.den.berg@vu.nl}
+% }
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Sabrina's Game asks for a domino tiling of a rectangular grid that minimizes a cost associated with adjacent paired cells. Potentially, this problem could be solved with  evolutionary algorithms, but these methods  require a mechanism for efficiently generating valid initial solutions. An incumbent claim however, conjectures that such a mechanism does not exist. In this study, we show this claim to be at least partially false: valid initial solutions \textit{can} be sampled in polynomial time. We achieve this by modeling a tiling as a maximum flow in a bipartite graph and introduce the Randomized Edmonds--Karp algorithm, in which the adjacency lists explored by breadth-first search are shuffled. The procedure always returns a valid solution on any rectangular grid and inherits polynomial time complexity from the default Edmonds--Karp algorithm. Results have a drawback though, as the returned solution distribution is not uniform, which is desirable for use in evolutionary algorithms. This in terms means that although the claim is partially falsified, it also partially remains intact.
+Sabrina's Game asks for a domino tiling of a rectangular grid that minimizes a cost associated with adjacent paired cells. Potentially, this problem could be solved with  evolutionary algorithms, but these methods  require a mechanism for efficiently generating valid initial solutions. However, an existing conjecture states that no such mechanism exists. In this study, we show this claim to be at least partially false: valid initial solutions \textit{can} be sampled in polynomial time. We achieve this by modeling a tiling as a maximum flow in a bipartite graph and introduce the Randomized Edmonds--Karp algorithm, in which the adjacency lists explored by breadth-first search are shuffled. The procedure always returns a valid solution on any rectangular grid (of even size \(m\times n\)) and inherits polynomial time complexity from the default Edmonds--Karp algorithm. The method has one drawback, though: the resulting distribution over solutions is not uniform, although uniformity would be desirable for evolutionary algorithms. This means that although the conjecture is partially refuted, its uniformity component remains open.
 
 \keywords{Domino tiling \and Random generation \and Edmonds--Karp \and Perfect matching \and Evolutionary computation}
 \end{abstract}
 
 \section{Introduction}
-``Sabrina's Game'', a pedestrianly simple game apparently named after a master's student, found its introduction at EvoSTAR~\cite{SabrinasGame2026}. It concerns a rectangular grid (the `board') containing an even number of cells with integer values inside which needs to be completely covered with 1x2 dominoes. Each domino then covers two integer-valued cells, and one domino's objective value is absolute difference between both covered integers. If the entire board gets covered without overlapping tiles or uncovered cells, a solution is \text{valid} and the objective value of the solution is sum of all dominoes (See Figure \ref{fig:tiling}).
+``Sabrina's Game'', a seemingly simple game apparently named after a master's student, was introduced at Evostar 2026~\cite{SabrinasGame2026}. The problem is defined on a rectangular grid, referred to as the board, containing an even number of integer-valued cells that must be completely covered by \(1\times2\) dominoes. (See Figure~\ref{fig:sabrina}). Each domino then covers two integer-valued cells, and the contribution of a domino to the objective value is the absolute difference between the two integers it covers. If the entire board gets covered without overlapping tiles or uncovered cells, a solution is \text{valid} and the objective value of the solution is the sum of the contributions of all dominoes (See Figure~\ref{fig:tiling}). Sabrina's Game can be seen as a single-player puzzle game, much like Sudoku.
 
-At the time of writing, we are unaware of a proof of the problem's complexity and whether a polynomial time solving algorithm exists. It is surely solvable in time complexity $2^{(m \times n)/2}$ though, as a board with $m \times n$ cells must have $(m \times n)/2$ dominoes, each of which can either be placed horizontally or vertically. Since valid solutions do not allow for empty cells, a solution can be `read' left-right-top-bottom as a binary string, skipping earlier covered cells. As such, a depth-first search algorithm can generate all possible solutions in $2^{(m \times n)/2}$ time and therefore, the problem is at most NP-hard.
+At the time of writing, we are unaware of a proof of the problem's complexity and whether a polynomial time solving algorithm exists. A straightforward exhaustive-search algorithm solves the problem in $2^{(m \times n)/2}$ time, as a board with $m \times n$ cells must have $(m \times n)/2$ dominoes, each of which can either be placed horizontally or vertically. This establishes an exponential upper bound for this particular enumeration procedure, but it does not characterize the computational complexity of the optimization problem.
 
-A depth-first search however, would also generate a (large?) number of invalid solutions, with dominoes either overlapping, or protruding the board's edge, leaving empty cells. Besides, algorithms of exponential complexity (or even high-polynomial complexity) practically forbid efficient problem solving. A useful alternative is usually found in evolutionary algorithms, but this is where the snag sits in Sabrina's game: supposedly, it cannot be sampled. In the words of the author ``I conjecture there is no algorithm that can uniformly random sample valid configurations in deterministic polynomial time.''~\cite{SabrinasGame2026}.
+However, a naïve depth-first search would also explore a potentially large number of invalid solutions, with dominoes either overlapping, or protruding the board's edge, leaving empty cells. Besides, algorithms  with exponential, or even high-degree polynomial, running times may be impractical for large instances. A useful alternative is usually found in evolutionary algorithms, but this is where the main difficulty arises in Sabrina's game: supposedly, it cannot be sampled. In the words of the author ``I conjecture there is no algorithm that can uniformly random sample valid configurations in deterministic polynomial time.''~\cite{SabrinasGame2026}.
 
-In this paper, we will show that conjecture is at least partly false. We present a randomized version of the Edmonds-Karp algorithm, which samples valid solutions in polynomial time. From randomizing the queue in the breadth-first subroutine of the algorithm, the returned solutions are also random. However, experimentation shows that these are not uniformly distributed, leaving the bold conjecture from the previous paragraph partly intact. The contributions of this study are:
+In this paper, we will show that conjecture is at least partly false. We present a randomized version of the Edmonds-Karp algorithm, which generates random valid solutions in polynomial time. By randomizing the order in which neighboring nodes are explored during breadth-first search, the algorithm produces randomized outputs. However, experimentation shows that these are not uniformly distributed, leaving the bold conjecture from the previous paragraph partly intact. The contributions of this study are:
 
 \begin{enumerate}
   \item Randomized Edmonds--Karp, a simple randomized polynomial-time algorithm for generating random valid solutions to Sabrina's game.
   \item An empirical rejection of exact uniformity on the $4\times4$ instance extracted from $10^6$ samples.
-  \item a scaling study of runtime in iterations, runtime and memory usage on boards sized $\in 4\times4, 6\times6, ... 20\times20$, with $10^6$ algorithmic runs per size.
+  \item a scaling study of the number of iterations, runtime and memory usage on square boards of sizes $(4\times4), (6\times6), \ldots, (20\times20)$, with $10^6$ algorithmic runs per size.
 \end{enumerate}
 
-\noindent The rest of this paper is organized as follows: in the next section, we will discuss some related work, after which we will introduce the Randomized Edmonds--Karp algorithm in section \ref{sec:randomizededmondskarp}. Experimental results follow in Section \ref{sec:experimentsandresults} after which the discussion in Section \ref{sec:discussion} and conclusion in Section \ref{sec:conclusion} and wrap up the paper.
-
+\noindent The rest of this paper is organized as follows: Section~\ref{sec:relatedwork} reviews related work. Section~\ref{sec:game} formally defines Sabrina’s Game, and Section~\ref{sec:randomizededmondskarp} introduces Randomized Edmonds–Karp. Section~\ref{sec:experimentsandresults} presents the experimental results, followed by a discussion in Section~\ref{sec:discussion} and concluding remarks in Section~\ref{sec:conclusion}.
 
 \section{Related Work}
 \label{sec:relatedwork}
 
-Randomly sampling solutions, either uniformly or not, has recently been recognized as a serious issue for many combinatorial problems \cite{maaranen2007initial}. Often in NP, these problems are unsolvable by exact algorithms because of their superpolynomially exploding runtimes. In such cases, investigators usually rely on non-exact algorithms that \textit{do} run in polynomial time, such as approximation algorithms \cite{williamson2011design}, PTAS or FPTAS algorithms  \cite{schuurman2001approximation}, and very often iterative heuristics in the form of evolutionary algorithms (EAs) \cite{eiben2003introduction}.
+Randomly sampling solutions, either uniformly or not, has recently been recognized as a serious issue for many combinatorial problems~\cite{maaranen2007initial}. Often in NP, these problems are unsolvable by exact algorithms because of their superpolynomially exploding runtimes. In such cases, investigators usually rely on non-exact algorithms that \textit{do} run in polynomial time, such as approximation algorithms~\cite{williamson2011design}, PTAS or FPTAS algorithms ~\cite{schuurman2001approximation}, and very often iterative heuristics in the form of evolutionary algorithms (EAs)~\cite{eiben2003introduction}.
 
-Most evolutionary algorithms however, do have some modest requirements of themselves. Building on the principle of iterative improvement, they need at least a valid initial solution, preferably uniformly randomly sampled. Furthermore, they need an admissible mutation operator that typically makes a small change to an incumbent solution without invalidating it, hopefully improving its objective value. In many cases, there is also a form of crossover to prevent the algorithm from getting stuck in local search minima. But this operation is not strictly required; algorithms can also resample, or increase their mutation size\footnote{Note that a maximally increased mutation size is equivalent to full random sampling.}.
+Most evolutionary algorithms, however, impose several basic requirements. Building on the principle of iterative improvement, they need at least a valid initial solution, preferably uniformly randomly sampled. Furthermore, they need an admissible mutation operator that typically makes a small change to an incumbent solution without invalidating it, hopefully improving its objective value. In many cases, there is also a form of crossover to prevent the algorithm from getting stuck in local search minima. But this operation is not strictly required; algorithms can also resample, or increase their mutation size\footnote{Note that a maximally increased mutation size is equivalent to full random sampling.}.
 
-Recently, it became apparent that not all problems have these operations. Some do though. The partition problem, which is in NP and requires a set of integers to be split into two sets of equal summed values, is one such problem \cite{salas2025beyond,horn2024separating,sazhinov2023partition}. It is so `pliable' that a multitude of algorithms exist for uniform random sampling, mutation of any given magnitude, and even crossover. Moreover, all of these run in deterministic polynomial time. The partition problem is an EA-friendly problem.
+Recently, it became apparent that not all problems have these operations. Some do though. The partition problem, which is in NP and requires a set of integers to be split into two sets of equal summed values, is one such problem~\cite{salas2025beyond,horn2024separating,sazhinov2023partition}. It is so `pliable' that a multitude of algorithms exist for uniform random sampling, mutation of any given magnitude, and even crossover. Moreover, all of these run in deterministic polynomial time. The partition problem is an EA-friendly problem.
 
 
-Slightly less pliable is the traveling salesman problem (TSP) \cite{applegate2011traveling}. Also in NP, it can definitely be uniformly randomly sampled in deterministic polynomial time \cite{hassel2026traveling} and has a number of mutation operators of variable magnitude that connect the entire search space. Its crossover operators however, nearly always require some sort of repair routine \cite{dou2023comparative}, and TSP is thereby significantly less EA-friendly than the partition problem  which can have any part of one parent crossovered with any part of the other parent.
+The Traveling Salesman Problem (TSP) is somewhat less amenable to these operations~\cite{applegate2011traveling}. Also in NP, it can definitely be uniformly randomly sampled in deterministic polynomial time~\cite{hassel2026traveling} and has a number of mutation operators of variable magnitude that connect the entire search space. Its crossover operators however, nearly always require some sort of repair routine~\cite{dou2023comparative}, and TSP is thereby significantly less EA-friendly than the partition problem which allows arbitrary components of two parents to be recombined.
 
-Even less pliable than TSP is the HP protein folding problem \cite{dill1985theory,berger1998protein,lau1989lattice,van2023quantifying,van2026towards}. For this problem, uniform random sampling can only be done stochastically (resampling when an invalid solution is generated), but it takes an \textit{expected exponential} number of samples in the instance size before a single valid initial solution is sampled \cite{horn2023randomly,jansen2023can}. Mutation is also troublesome for this problem. Though simple fold-mutations and crankshaft-mutations succeed relatively often, they do not always, and can therefore not be performed in deterministic polynomial time. Worse, like its sampling method, the success rate of these mutation operators appears to drop in the problem size \cite{horn2023randomly}. We are not aware of any eligible crossovers for this problem, but in the absence of such mutations, we doubt they (can) exist. It is interesting to see how many authors omit implementational details for the approaches that \textit{do} exist for this EA-unfriendly problem (See e.g. argumentation in \cite{jansen2023can}).
+Even less pliable than TSP is the HP protein folding problem~\cite{dill1985theory,berger1998protein,lau1989lattice,van2023quantifying,van2026towards}. For this problem, uniform random sampling can only be done stochastically (resampling when an invalid solution is generated), but it takes an \textit{expected exponential} number of samples in the instance size before a single valid initial solution is sampled~\cite{horn2023randomly,jansen2023can}. Mutation is also troublesome for this problem. Though simple fold-mutations and crankshaft-mutations succeed relatively often, they do not always, and can therefore not be performed in deterministic polynomial time. Moreover, as with the sampling procedure, the success rate of these mutation operators appears to decrease as the instance size increases~\cite{horn2023randomly}. We are not aware of any eligible crossovers for this problem, but in the absence of such mutations, it is unclear whether suitable crossover operators exist. It is interesting to see how many authors omit implementational details for the approaches that \textit{do} exist for this EA-unfriendly problem (See e.g. argumentation in~\cite{jansen2023can}).
 
-At the other extreme of this ranking that began with the partition problem must be the notorious traveling tournament problem (TTP) \cite{easton2001traveling}. This problem does have a number of proposed mutation and crossover operators \cite{khelifa2017,biajoli2006}, but none of them is likely to produce valid solutions from valid solutions \cite{hassel2026traveling}, which might have to do with the tremenouds dissimilarity between valid solutions \cite{loyen2025across,loyen2025different}. Moreover, this problem has no known uniform sampling method besides resampling invalid solutions, which, like the HP protein folding problem requires an expected exponential number of resamples in instance size before creating a valid solution \cite{verduin2023tooconstrained,verduintraveling,verduin2024rows}. This issue is so vexing, that a team of investigators from Ghent listed finding a polynomial time sampling algorithm for this the TTP as an open problem (number 7 in their paper \cite{van2026traveling}). These authors have a long (even seminal) history in TTP-research \cite{van2025column,devriesere2026novel,easton2001traveling} and do acknowledge Nakahata's initiative to generate ``many'' solutions \cite{nakahatafeasible,nakahata2026constructive}. Better than nothing, but Nakahata's solution are non-random, and definitely not uniformly distributed. Similar to HP-protein folding, the EA-approaches that \textit{do} exist for this EA-hostile problem typically lack implementational details (see argumentation in \cite{verduin2024rows})
+At the other extreme of this ranking that began with the partition problem must be the notorious traveling tournament problem (TTP)~\cite{easton2001traveling}. This problem does have a number of proposed mutation and crossover operators~\cite{khelifa2017,biajoli2006}, but none of them reliably produces a valid offspring from valid parent solutions~\cite{hassel2026traveling}, which might have to do with the substantial dissimilarity between valid solutions~\cite{loyen2025across,loyen2025different}. Moreover, this problem has no known uniform sampling method besides resampling invalid solutions, which, like the HP protein folding problem requires an expected exponential number of resamples in instance size before creating a valid solution~\cite{verduin2023tooconstrained,verduintraveling,verduin2024rows}. This issue is sufficiently important that a team of investigators from Ghent listed finding a polynomial time sampling algorithm for this the TTP as an open problem (number 7 in their paper~\cite{van2026traveling}). These authors have a long-standing, and in some cases seminal, record of research on the TTP~\cite{van2025column,devriesere2026novel,easton2001traveling} and do acknowledge Nakahata's initiative to generate ``many'' solutions~\cite{nakahatafeasible,nakahata2026constructive}. Better than nothing, but Nakahata's solutions are non-random, and definitely not uniformly distributed. Similar to HP-protein folding, the EA-approaches that \textit{do} exist for this EA-hostile problem typically lack implementational details (see argumentation in~\cite{verduin2024rows})
 
-And then there's Sabrina's Game. Introduced in 2026 in Evostar's late-breaking abstracts, touting ``requirements might make the problem both nontrivial and unamenable
-for evolutionary algorithms, due to unsampleability of initial random solutions'' \cite{SabrinasGame2026}. And indeed, motivated by the first figure of the paper, the problem appears to fall in the same category as TTP and the HP protein folding problem. A stochastic uniform random sampling method surely appears possible, but how its resampling scales across instance sizes is unknown; considering the $2^n$ combinatorial space, an exponential number could reasonably be expected. A deterministic polynomial time uniform random sampling algorithm is also not known for this problem. But this research gap will be partially filled with the results in this paper.
-
+And then there's Sabrina's Game. Introduced in 2026 in Evostar Late-Breaking Abstracts, touting ``requirements might make the problem both nontrivial and unamenable
+for evolutionary algorithms, due to unsampleability of initial random solutions''~\cite{SabrinasGame2026}. And indeed, motivated by the first figure of the paper, the problem appears to fall in the same category as TTP and the HP protein folding problem. A sampling procedure could in principle generate uniformly distributed valid solutions, but how its resampling scales across instance sizes is unknown; given the exponentially large configuration space, the expected number of trials may itself grow exponentially with the instance size. A deterministic polynomial time uniform random sampling algorithm is also not known for this problem. But this research gap will be partially filled with the results in this paper.
 
 \section{Sabrina's Game}
+\label{sec:game}
 
-Let $R_{m,n}=\{1,\ldots,m\}\times\{1,\ldots,n\}$ be an $m\times n$ rectangular grid. A domino is an unordered pair of adjacent cells. A valid solution is a set $D$ of dominoes such that every cell occurs in exactly one domino. Therefore, $mn$ must be even.
+Let $R_{m,n}=\{1,\ldots,m\}\times\{1,\ldots,n\}$ be an $m\times n$ rectangular grid, filled with integers. A domino is an unordered pair of adjacent cells. A valid solution is a set $D$ of dominoes such that every cell occurs in exactly one domino (Fig.~\ref{fig:tiling}). Therefore, $mn$ must be even.
 
 For the optimization version, each cell $u$ has a value $a_u$, and the objective is
 \begin{equation}
   \min_{D} \sum_{\{u,v\}\in D}|a_u-a_v|.
 \end{equation}
+
+For instance, the two solutions illustrated by Figure~\ref{fig:sabrina} have an objective value of 46 and 32, respectively in the middle and on the right of the figure.
 
 \begin{figure}[t]
   \centering
@@ -263,10 +263,10 @@ For the optimization version, each cell $u$ has a value $a_u$, and the objective
     \draw[box,,myblue] (1+0.1,0+0.1) rectangle (1+1.9,0+0.9);
     \draw[box,,myblue] (3+0.1,0+0.1) rectangle (3+0.9,0+1.9);
   \end{tikzpicture}
-  \caption{Fitness: 46 and 32}
+  \caption{A problem instance (left) and two valid solutions with different objective values (46 in the middle and 32 on the right)}\label{fig:sabrina}
 \end{figure}
 
-The present work considers only satisfaction: finding any valid $D$. This is precisely the classical domino-tiling problem, equivalently a perfect matching of the grid graph~\cite{fusy2016random}.
+The present work considers only the satisfaction version of the problem, namely, finding any valid set $D$. This is precisely the classical domino-tiling problem and is equivalent to finding a perfect matching of the grid~\cite{fusy2016random}.
 
 \begin{figure}[t]
   \centering
@@ -312,7 +312,7 @@ The present work considers only satisfaction: finding any valid $D$. This is pre
 
 \subsection{Domino Tiling and Maximum Flow}
 
-There exists a well-known correspondance between the domino tiling problem and the maximum flow problem. To explain how the finding a valid solution to Sabrina's Game boils down finding a maximum flow in a graph, let's paint a board of our problem as a Chessboard, as illustrated on the left side of Figure~\ref{fig:chess}. We can replace each square on the board with a white or black node. These nodes are connected with an edge if their corresponding squares are adjacent on the board. This gives the graph on the right side of Figure~\ref{fig:chess}.
+There is a well-known correspondence between the domino tiling problem and the maximum flow problem. To explain how finding a valid solution to Sabrina's Game reduces to finding a maximum flow in a graph, color the cells of the board as on a chessboard, as illustrated on the left side of Figure~\ref{fig:chess}. We can replace each cell by a white or black node. These nodes are connected with an edge if their corresponding squares are adjacent on the board. This gives the graph on the right side of Figure~\ref{fig:chess}.
 
 \begin{figure}
   \centering
@@ -355,10 +355,10 @@ There exists a well-known correspondance between the domino tiling problem and t
     \node[minimum size=0.7cm,circle,draw] (k) [black,fill=white] at (2.5,0.5) {k};
     \node[minimum size=0.7cm,circle,draw] (l) [white,fill=black] at (3.5,0.5) {l};
   \end{tikzpicture}
-  \caption{A Sabrina's Game board seen as a Chessboard}\label{fig:chess}
+  \caption{A Sabrina's Game board seen as a chessboard}\label{fig:chess}
 \end{figure}
 
-\noindent It is easy to see that the graph is, in fact, bipartite, since none of the white nodes (and, likewise, none of the black nodes) are connected to one another. Therefore, the graph on the right side of Figure~\ref{fig:chess} is the same as the one on the left side of Figure~\ref{fig:flownetwork}. If we add two dummy nodes, a source \(s\) and a sink \(t\) to this graph, connect \(s\) to all white nodes and \(t\) to all black nodes, and turns each edge into an arc following the orientation \(s \rightarrow\)  white nodes \(\rightarrow\) black nodes \(\rightarrow t\), as despicted on the right side of Figure~\ref{fig:flownetwork}, and finally set a capacity of 1 on each ``white-to-black'' arc and 0 to all other arcs, we obtain a flow network on which we can solve the maximum flow problem to find a valid solution to the original Sabrina's Game board: a flow of value $mn/2$ is equivalent to a perfect matching and thus to a valid tiling. This correspondance is proved later with Corollary~\ref{cor:correct}.
+\noindent It is easy to see that the graph is, in fact, bipartite, because no two white nodes, and no two black nodes, are adjacent. Therefore, the graph on the right side of Figure~\ref{fig:chess} is the same as the one on the left side of Figure~\ref{fig:flownetwork}. If we add two dummy nodes, a source \(s\) and a sink \(t\) to this graph, connect \(s\) to all white nodes and \(t\) to all black nodes, and turn each edge into an arc following the orientation \(s \rightarrow\)  white nodes \(\rightarrow\) black nodes \(\rightarrow t\), as depicted on the right side of Figure~\ref{fig:flownetwork}, and finally assign a capacity of 1 on each ``white-to-black'' arc and 0 to all other arcs, we obtain a flow network on which we can solve the maximum flow problem to find a valid solution to the original Sabrina's Game board: a flow of value $mn/2$ is equivalent to a perfect matching and thus to a valid tiling. This correspondence is proved later with Corollary~\ref{cor:correct}.
 
 \begin{figure}
   \centering
@@ -468,17 +468,17 @@ There exists a well-known correspondance between the domino tiling problem and t
 \label{sec:randomizededmondskarp}
 The Ford--Fulkerson algorithm (Algorithm~\ref{algo:ff}) solves maximum flow problems. It manipulates a residual graph in addition to the input graph, altering it as it carries out its execution. For the sake of conciseness and readability, we chose to omit any reference to a residual graph in the pseudocode provided below.
 
-The correspondance between the maximum flow problem with capacities as describe above and the domino tiling problem is well-known. Since the Ford--Fulkerson algorithm runs in polynomial time and can be used to find valid solutions to the Sabrina's Game problem, finding a polynomial-time, uniformly random algorithm to generate valid solutions boils down to this question: ``Can we modify the Ford--Fulkerson algorithm to output uniformly random valid solutions?''
+The correspondence between the maximum flow problem with capacities as described above and the domino tiling problem is well-known. Since the Ford--Fulkerson algorithm runs in polynomial time and can be used to find valid solutions to Sabrina's Game problem, finding a polynomial-time, uniformly random algorithm to generate valid solutions reduces to the following question: ``Can we modify the Ford--Fulkerson algorithm to output uniformly random valid solutions?''
 
-The Ford--Fulkerson algorithm is sometimes called the Ford--Fulkerson method because it doesn't specify how to find simple paths, {\it i.e.}, without loops, from the source node to the sink node (Algorithm~\ref{algo:ff}, Line~4). To get random outputs, we need to randomize this pathfinding. 
+The Ford--Fulkerson algorithm is sometimes called the Ford--Fulkerson method because it does not specify how to find simple paths, {\it i.e.}, without loops, from the source node to the sink node (Algorithm~\ref{algo:ff}, Line~4). To obtain randomized outputs, we need to randomize this pathfinding. 
 
 The Edmonds--Karp algorithm is a variant of the Ford--Fulkerson algorithm where the path from the source to the sink is found by breadth-first search (BFS). The worst-case complexity of the Edmonds--Karp algorithm is $O(|V|\cdot |E|^2)$~\cite{edmondskarp1972}. The randomization used here changes only tie-breaking among nodes at the same BFS depth. Consequently, every selected augmenting path remains shortest, and the standard complexity result still applies.
 
-Algorithm~\ref{algo:path} allows us to get such random paths, by simply shuffling the children of a current node (Line~8) before exporing them in a breadth-first fashion (Line~9).
+Algorithm~\ref{algo:path} generates such randomized paths, by simply shuffling the children of a current node (Line~8) before exploring them in a breadth-first fashion (Line~9).
 
-We call Randomized Edmonds--Karp (\rek) algorithm the combination of the Ford--Fulkerson algorithm (Algorithm~\ref{algo:ff}) with a random BFS-based pathfinding (Algorithm~\ref{algo:path}).
+We call Randomized Edmonds--Karp (\rek) algorithm the combination of the Ford--Fulkerson algorithm (Algorithm~\ref{algo:ff}) with a randomized BFS-based path-selection procedure (Algorithm~\ref{algo:path}).
  
-\begin{algorithm}
+\begin{algorithm}[t]
   \DontPrintSemicolon
   $flow \gets \emptyset$\;
   \While{$\text{source } s \text{ has a child}$}{
@@ -496,9 +496,7 @@ We call Randomized Edmonds--Karp (\rek) algorithm the combination of the Ford--F
   \caption{Ford--Fulkerson}\label{algo:ff} 
 \end{algorithm}
 
-
-
-\begin{algorithm}
+\begin{algorithm}[t]
   \DontPrintSemicolon
   \KwIn{A path containing source $s$ only}
   \KwOut{A random path from source $s$ to sink $t$}
@@ -539,56 +537,56 @@ We call Randomized Edmonds--Karp (\rek) algorithm the combination of the Ford--F
   The \rek algorithm returns a maximum flow of value $mn/2$.
 \end{proposition}
 \begin{proof}
-  Each iteration of the {\it while} loop of Algorithm~\ref{algo:ff} is adding one arc into the flow, even if some arcs are also removed. Indeed, removing an arc from the flow means that the path contains a flipped arc from a black node to a white node. However, the path necessarily contains a ``white-to-black'' arc for each ``black-to-white'' arc, to reach the sink \(t\). This implies that each arc removal from the flow is compensated by the addition of another arc in the flow. Thus, for \(k\) ``black-to-white'' arcs in the path, the later contains exactly \(k+1\) ``white-to-black'' arcs.
+  Each iteration of the {\it while} loop of Algorithm~\ref{algo:ff} adds one arc to the flow, even if some arcs are also removed. Indeed, removing an arc from the flow means that the path traverses a flipped arc from a black node to a white node. However, the path necessarily contains a ``white-to-black'' arc for each ``black-to-white'' arc, to reach the sink \(t\). This implies that each arc removal from the flow is compensated by the addition of another arc in the flow. Thus, for \(k\) ``black-to-white'' arcs in the path, the latter contains exactly \(k+1\) ``white-to-black'' arcs.
 
   All capacities between white and black nodes are equal to 1, so each flow augmentation will increase by 1. Algorithm~\ref{algo:ff} selects a total of $mn/2$ paths, since there are $mn/2$ white nodes and thus $mn/2$ arcs from the source~\(s\) to a white node. That implies $mn/2$ flow augmentations. The algorithm returns a maximum flow of value $mn/2$. \qed
 \end{proof}
 
 \begin{lemma}\label{lem:notwice}
-  No couples of arcs between white and black nodes in the flow contain twice the same node.
+  No couples of arcs between white and black nodes in the flow share an endpoint.
 \end{lemma}
 \begin{proof}
-  Suppose, for the sake of a contradiction, that there exist two arcs in the flow between white and black nodes that share a common node. Since both arcs are in the flow, we can exclude arcs of the form \(a\rightarrow b\) and \(b\rightarrow c\), because it would implies that one of them is a flipped arc, which cannot be in the flow. Therefore, we have either two arcs of the form \(a\rightarrow b\) and \(a\rightarrow c\) (Form 1), or of the form \(a\rightarrow c\) and \(b\rightarrow c\) (Form 2).
+  Suppose, for the sake of a contradiction, that there exist two arcs in the flow between white and black nodes that share a common node. Since both arcs are in the flow, we can exclude arcs of the form \(a\rightarrow b\) and \(b\rightarrow c\), because it would imply that one of them is a flipped arc, which cannot be in the flow. The two arcs must therefore be of the form \(a\rightarrow b\) and \(a\rightarrow c\) (Form 1), or \(a\rightarrow c\) and \(b\rightarrow c\) (Form 2).
 
-  Form 1 implies that \(a\) is white, and \(b\) and \(c\) blacks, since arcs in the flow go from white nodes to black nodes. Having two arcs starting from Node \(a\) in the flow requires two different paths to reach \(a\) twice from \(s\). However, there exist a unique path from \(s\) to \(a\) (as well as any other white nodes), which is directly the arc \(s\rightarrow  a\). Since this arc is flipped after a path contains this arc, there is no way to reach Node \(a\) again from source \(s\) a second time.
+  Form 1 implies that \(a\) is white, and \(b\) and \(c\) are black, since arcs in the flow go from white nodes to black nodes. Having two arcs starting from Node \(a\) in the flow requires two distinct paths to reach \(a\) twice from \(s\). However, there exists a unique path from \(s\) to \(a\) (as for every other white node), which is directly the arc \(s\rightarrow  a\). Since this arc is flipped after a path contains this arc, there is no way to reach Node \(a\) again from source \(s\) a second time.
 
-  The similar reasoning applies to Form 2: \(c\) must be a black node, so if two arcs in the flow reach the sink \(t\) through \(c\), it necessarily needs two different paths from \(c\) to \(t\). However, the unique path is the arc \(c\rightarrow t\) which is flipped after a path contains this arc.
+  A similar argument applies to Form 2: \(c\) must be a black node, so if two arcs in the flow reach the sink \(t\) through \(c\), it necessarily needs two distinct paths from \(c\) to \(t\). However, the unique path is the arc \(c\rightarrow t\) which is flipped after a path contains this arc.
   \qed
 \end{proof}
 
 \begin{corollary}\label{cor:correct}
-  The maximum flow returned by the \rek algorithm corresponds to a valid solution of the Sabrina's Game problem.
+  The maximum flow returned by the \rek algorithm corresponds to a valid solution of Sabrina's Game problem.
 \end{corollary}
 \begin{proof}
-  We know that a valid solution of a Sabrina's Game problem instance can be seen as a perfect domino tiling on the grid of the problem instance.
-  We need to satisfy three constraints to have a perfect domino tiling of a \(m\times n\) grid:
+  We know that a valid solution of an instance of Sabrina's Game can be seen as a perfect domino tiling on the grid of the problem instance.
+  Three conditions must hold for a perfect domino tiling of a \(m\times n\) grid:
   \begin{enumerate}
-    \item All dominos are placed within the grid boundary.
-    \item No dominos are overlapping each others.
+    \item Every domino lies entirely within the grid boundary.
+    \item No two dominoes overlap.
     \item No cells remain uncovered by a domino.
   \end{enumerate}
   
-\noindent An arc \(a\rightarrow b\) in the flow correponds to place a domino covering cells \(a\) and \(b\) on the grid. Thus, by construction, there is no way to place a domino outside the boundary of the grid. Two dominos overlaps the same cell if we have two arcs in the flow sharing the same node. Lemma~\ref{lem:notwice} shows this is impossible.
+\noindent An arc \(a\rightarrow b\) in the flow corresponds to placing a domino covering cells \(a\) and \(b\) on the grid. Thus, by construction, there is no way to place a domino outside the boundary of the grid. Two dominoes overlap the same cell if we have two arcs in the flow sharing the same node. Lemma~\ref{lem:notwice} shows this is impossible.
 
-By Proposition~\ref{prop:return}, we know that the \rek algorithm returns a maximum flow of value $mn/2$. Since only arcs between white and black nodes have a capacity of 1 (all arcs from \(s\) and towards \(t\) have a capacity of 0), it implies that the flow contains $mn/2$ arcs from white nodes to black nodes, correponding to $mn/2$ dominos to place on the grid. Since no dominos overlap each others and none goes beyond the grid boundary, all cells are necessarily covered by a unique domino. \qed
+By Proposition~\ref{prop:return}, we know that the \rek algorithm returns a maximum flow of value $mn/2$. Since only arcs between white and black nodes have a capacity of 1 (all arcs from \(s\) and towards \(t\) have a capacity of 0), this implies that the flow contains $mn/2$ arcs from white nodes to black nodes, correponding to $mn/2$ dominoes placed on the grid. Since no two dominoes overlap and every domino lies with the grid boundary, all cells are necessarily covered by a unique domino. \qed
 \end{proof}
 
 \begin{proposition}\label{prop:complexity}
   Randomized Edmonds--Karp terminates in polynomial time.
 \end{proposition}
 \begin{proof}
-  At each iteration, Algorithm~\ref{algo:ff} consumes one arc from the source \(s\) to a white node, and reciprocally one arc from a black node to the sink \(s\), so it necessarily terminates after \(mn/2\) iterations, since no paths from \(s\) to \(t\) remain once all ``s-to-white'' and ``black-to-t'' arcs have been flipped.
+  At each iteration, Algorithm~\ref{algo:ff} consumes one arc from the source \(s\) to a white node, and one arc from a black node to the sink \(t\), so it necessarily terminates after \(mn/2\) iterations, because no paths from \(s\) to \(t\) remain once all ``s-to-white'' and ``black-to-t'' arcs have been flipped.
 
-  We already know that the Edmonds--Karp algorithm runs in $O(|V|\cdot |E|^2)$~\cite{edmondskarp1972}. Randomizing nodes within a BFS does not change its complexity: BFS is in \(O(|V|+|E|)\), and shuffling the children of a node is done in constant time, since no nodes has more than 4 children. Thus, the standard Edmonds--Karp bound $O(|V|\cdot |E|^2)$ applies for the \rek algorithm. For an $n\times m$ grid, we have $|V|=mn+2$ and $|E|=\Theta(mn)$. Therefore, the \rek algorithm runs in polynomial-time in the problem instance size. \qed
+  We already know that the Edmonds--Karp algorithm runs in $O(|V|\cdot |E|^2)$~\cite{edmondskarp1972}. Randomizing nodes within a BFS does not change its complexity: BFS is in \(O(|V|+|E|)\), and shuffling the children of a node is done in constant time, since no nodes has more than 4 children. Thus, the standard Edmonds--Karp bound $O(|V|\cdot |E|^2)$ applies for the \rek algorithm. For an $n\times m$ grid, we have $|V|=mn+2$ and $|E|=\Theta(mn)$. Therefore, the \rek algorithm runs in time polynomial in the instance size. \qed
 \end{proof}
 
 \section{Experiments and Results}
 \label{sec:experimentsandresults}
 \subsection{Experimental Methodology}
-We evaluated square grids of side $n\in\{4,6,8,10,12,14,16,18,20\}$. Each configuration was executed $10^6$ times. We recorded the mean runtime in microseconds, and the program memory in kilobytes. All experiments have been done on GNU/Linux CachyOS over a machine with a Core i9 9900 CPU and 32 GB of RAM. The C++ code has been compiled with g++ v16.2.1, with the -O3 optimization flag. The source code and the experimental result summary can be found at \href{https://anonymous.4open.science/r/sabrinasgame/}{anonymous.4open.science/r/sabrinasgame/}.
+We evaluated square grids of side $n\in\{4,6,8,10,12,14,16,18,20\}$. Each configuration was executed $10^6$ times. We recorded the mean runtime in microseconds, and the program memory in kilobytes. All experiments have been done on CachyOS GNU/Linux on a machine equipped with an Intel Core i9-9900 CPU and 32 GB of RAM. The C++ implementation was compiled with g++ 16.2.1 using the -O3 optimization flag. The source code and the summary of the experimental results can be found at \href{https://anonymous.4open.science/r/sabrinasgame/}{anonymous.4open.science/r/sabrinasgame/}.
 % \href{https://github.com/richoux/Sabrina-s-Game/tree/evostar2027}{github.com/richoux/Sabrina-s-Game/tree/evostar2027}.
 
-Runtime and memory values are aggregate measurements supplied by the implementation. As discussed in the next subsection, the number of interations of the algorithm is deterministic.
+The reported runtime and memory values were collected by the experimental implementation and aggregated over \(10^6\) runs. As discussed in the next subsection, the number of iterations of the algorithm is deterministic.
 
 \subsection{Results}
 
@@ -618,22 +616,22 @@ $20\times20$ & 200 & 11,898.37 & 9,884\\
 \caption{Number of while-loop iterations, mean runtime, and memory consumption as the square grid side increases.}\label{fig:scaling}
 \end{figure}
 
-The raw results are given in Table~\ref{tab:results}, and depicted as measurement curves and regressions in Figure~\ref{fig:scaling}. 
+The raw results are given in Table~\ref{tab:results}, and shown as empirical curves and fitted models in Figure~\ref{fig:scaling}. 
 
 The number of while-loop interations is deterministic in these experiments: all grids are tileable and every augmentation carries one unit, hence $n^2/2$ iterations are required. This is illustrated by the plot on the left of Figure~\ref{fig:scaling}.  
 
-The mean runtime remains below 12ms even for the $20\times20$ grid. A descriptive power-law regression on the means gives approximately $R(n)=0.06544 n^{4.036}$. This is depicted by the plot in the middle of Figure~\ref{fig:scaling}. This is not a complexity proof, but it suggests quartic growth over the measured range, substantially below the conservative generic bound given in the proof of Proposition~\ref{prop:complexity}. Runtime increases by a factor of about 686 between $n=4$ and $n=20$, while the number of cells increases by a factor of 25.
+The mean runtime remains below \(12\,\mathrm{ms}\) even for the $20\times20$ grid. A descriptive power-law regression on the means gives approximately $R(n)=0.06544 n^{4.036}$. This is depicted by the plot in the middle of Figure~\ref{fig:scaling}. This is not a complexity proof, but it suggests quartic growth over the measured range, substantially lower than the conservative generic upper bound given in the proof of Proposition~\ref{prop:complexity}. Runtime increases by a factor of about 686 between $n=4$ and $n=20$, while the number of cells increases by a factor of 25.
 
-Measured memory increases by 1980kB, or approximately 25\%, across the tested range. A linear fit against the grid side starting from \(10\times10\) gives about 156kB per additional row/column over this narrow interval. Because the measurement includes a large fixed program baseline, these values do not directly establish an asymptotic space complexity. A linear regression of measured memory against the grid side gives \(M(n)=122.47n+7229.07\)kB, with \(R^2=0.99158\). This corresponds to an average increase of approximately 122.47kB per additional unit of grid side over the measured range. Since the measurements include a substantial fixed program baseline, this empirical fit should not be interpreted as an asymptotic space-complexity result. The plot on the right in Figure~\ref{fig:scaling} illustrates the measured memory increases and its associated regression.
+Measured memory increases by \(1980\,\mathrm{kB}\), or approximately 25\%, across the tested range. Considering only grids from \(10\times10\) to \(20\times20\), a least-squares linear regression gives \(M(n) = 156.74n + 6678.85\,\mathrm{kB}\), with \(R^2 = 0.99158\). Over this range, the measured memory therefore increases by approximately \(156.74\,\mathrm{kB}\) per additional unit of grid side. Because the measurements include a substantial fixed program baseline, this empirical fit should not be interpreted as an asymptotic space-complexity result. The plot on the right in Figure~\ref{fig:scaling} illustrates the measured memory increases and its associated regression.
 
 The coefficient of determination is \(R^2=0.99158\), meaning that the linear model explains approximately 99.16\% of the observed variation in memory consumption over the measured range. However, this goodness of fit does not establish a linear asymptotic space complexity.
 
 \section{Discussion}
 \label{sec:discussion}
 %\subsection{Why the distribution is not uniform}
-Random tie-breaking does not assign equal probability to all perfect matchings. A final matching can be reached through many sequences of shortest augmenting paths, and different matchings need not have the same number or probability mass of such histories. Figure~\ref{fig:notuniform} illustrated the frequency distribution among the 36 valid tilings of a $4\times4$ grid, after 1,000,000 independent runs of the \rek algorithm. We can observe that two solutions, number 13 and number 29, are found significatively more often than the others. These two solutions, shown in Figure~\ref{fig:notuniform}, are the most symmetrial ones, which explains their frequency, as there are many ways for the algorithm to arrive at these solutions.
+Random tie-breaking does not assign equal probability to all perfect matchings. A final matching can be reached through many sequences of shortest augmenting paths, and different matchings need not have the same number or probability mass of such histories. Figure~\ref{fig:notuniform} illustrates the frequency distribution among the 36 valid tilings of a $4\times4$ grid, after 1,000,000 independent runs of the \rek algorithm. We can observe that two solutions, number 13 and number 29, are found significantly more often than the others. These two solutions, shown in Figure~\ref{fig:notuniform}, are the most symmetric ones, which may partly explain their higher frequencies, as these tilings may be reachable through a larger number of augmenting-path sequences.
 
-The frequencies observed in Figure~\ref{fig:notuniform} reject the uniform null hypothesis under Pearson's chi-squared test at the 5\% significance level: with 35 degrees of freedom and a p-value of 0.05, we have a critical value of 49.8, but the chi-squared value is greatly higher, with a value of 140,869. Thus the \rek algorithm should be described as a randomized valid-solution generator, not as a uniform sampler.
+The frequencies observed in Figure~\ref{fig:notuniform} reject the uniform null hypothesis under Pearson's chi-squared test at the 5\% significance level: at the \(\alpha = 0.05\) significance level and with 35 degrees of freedom, the critical value is approximately 49.8. Pearson’s chi-squared goodness-of-fit test rejects the null hypothesis of a uniform distribution: the observed statistic is \(\chi^2 = 140,869\), yielding \(p \ll 0.001\). Thus the \rek algorithm should be described as a randomized valid-solution generator, not as a uniform sampler.
 
 \tikzset{
   sol13/.pic={
@@ -674,7 +672,7 @@ The frequencies observed in Figure~\ref{fig:notuniform} reject the uniform null 
   }
 }
 
-\begin{figure}
+\begin{figure}[t]
   \begin{tikzpicture}[scale=0.75]
     \begin{axis}[
       width=16cm, height=9cm,
@@ -711,13 +709,13 @@ The frequencies observed in Figure~\ref{fig:notuniform} reject the uniform null 
   \caption{Solution distribution over 1,000,000 runs on a \(4\times4\) grid. The two most frequent solutions are depicted.}\label{fig:notuniform}
 \end{figure}
 
-The central result is practical rather than distributional. The \rek algorithm does not solve the initial uniform-sampling question, but it combines three useful properties: it always constructs a valid tiling, it has a polynomial worst-case guarantee, and randomized BFS tie-breaking yields visibly different solutions. This makes it suitable for initializing evolutionary or other population-based methods without repair or rejection sampling.
+The central result is practical rather than distributional. The \rek algorithm does not solve the initial uniform-sampling question, but it combines three useful properties: it always constructs a valid tiling, it has a polynomial worst-case guarantee, and randomized BFS tie-breaking produces a variety of distinct solutions. This makes it suitable for initializing evolutionary or other population-based methods without repair or rejection sampling.
 
-The non-uniformity result requires careful interpretation. Rejecting exact uniformity does not show that the distribution is unusably concentrated. Exact uniform samplers exist for important special regions, such as domino shuffling for Aztec diamonds~\cite{fusy2016random,nordenstam2008shuffling}. Their objectives and computational trade-offs differ from the deliberately simple \rek procedure. For evolutionary computation, other relevant properties include, among others, entropy, effective support size, pairwise Hamming distance between individuals, and population models such as the island model. 
+The non-uniformity result requires careful interpretation. Rejecting exact uniformity does not show that the distribution is unusably concentrated. Exact uniform samplers exist for important special regions, such as domino shuffling for Aztec diamonds~\cite{fusy2016random,nordenstam2008shuffling}. Their objectives and computational trade-offs differ from the deliberately simple \rek procedure. For evolutionary computation, other relevant properties include entropy, effective support size, pairwise Hamming distance between individuals, and population models such as the island model. 
 
 \section{Conclusion}
 \label{sec:conclusion}
-We presented Randomized Edmonds--Karp for generating feasible solutions to the satisfaction version of Sabrina's Game. The method converts domino tiling into unit-capacity maximum flow and randomizes BFS tie-breaking. It is polynomial, returns valid tilings, and runs in milliseconds on square grids up to $20\times20$. It is not an exact uniform sampler, as demonstrated empirically on the $4\times4$ grid. Nevertheless, it offers a lightweight way to obtain varied feasible individuals for evolutionary search. Future work will quantify diversity more directly, compare the \rek algorithm with uniform or approximately uniform samplers, extend the experiments to larger regions, and measure the impact of initialization bias on the optimization version of Sabrina's Game.
+We presented Randomized Edmonds--Karp for generating feasible solutions to the satisfaction version of Sabrina's Game. The method converts domino tiling into unit-capacity maximum flow and randomizes BFS tie-breaking. It runs in polynomial time, returns valid tilings, and runs in milliseconds on square grids up to $20\times20$. It is not an exact uniform sampler, as demonstrated empirically on the $4\times4$ grid. Nevertheless, it offers a lightweight way to obtain varied feasible individuals for evolutionary search. Future work will quantify diversity more directly, compare the \rek algorithm with uniform or approximately uniform samplers, extend the experiments to larger grids, and measure the impact of initialization bias on the optimization version of Sabrina's Game.
 
 \bibliographystyle{splncs04}
 \bibliography{references}
